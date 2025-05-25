@@ -37,7 +37,7 @@ public class PlateComponent extends JLayeredPane {
     public void generatePlate() {
         removeAll();
         List<CakePiece> pieces = new ArrayList<>();
-        int count = 1 + new Random().nextInt(Plate.MAX_PIECES);
+        int count = 1 + new Random().nextInt(Plate.MAX_PIECES-1);
         for (int i = 0; i < count; i++) {
             pieces.add(new CakePiece(randomColor()));
         }
@@ -62,6 +62,7 @@ public class PlateComponent extends JLayeredPane {
                 Image sc = si.getScaledInstance(SLICE_SIZE,SLICE_SIZE,Image.SCALE_SMOOTH);
                 JLabel sl = new JLabel(new ImageIcon(sc));
                 sl.setBounds(xOff + c*SLICE_SIZE, yOff + r*SLICE_SIZE, SLICE_SIZE, SLICE_SIZE);
+
                 add(sl, Integer.valueOf(1));
             } catch(IOException e) { e.printStackTrace(); }
         }
