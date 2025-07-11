@@ -12,13 +12,15 @@ public class TablePanel extends JPanel {
     public TablePanel() {
         setBackground(TABLE_COLOR);
         setLayout(new FlowLayout(FlowLayout.CENTER,40,20));
-        // generateNewPlates();
+        setPreferredSize(new Dimension(100, 150));
     }
 
 
     public boolean removePlate(PlateComponent pc) {
         if (plates.remove(pc)) {
             remove(pc);
+            revalidate();
+            repaint();
             return true;
         }
         return false;

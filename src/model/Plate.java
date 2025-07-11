@@ -1,44 +1,58 @@
 package model;
 
-import java.util.*;
+import java.util.ArrayList;
+import java.util.Collections;
+import java.util.List;
+import java.util.Objects;
+import java.util.stream.Collectors;
 
 public class Plate {
-    private static int counter = 0;
+    // Contatore statico per garantire ID interni univoci per ogni piatto creato.
+    private static int internalCounter = 0;
+    // ID tecnico univoco, usato per confronti e hashing.
+    private final int internalId;
+    // ID visualizzato all'utente , assegnato dal controller.
+    private int displayId;
 
-    private final int id;
+    // Lista dei pezzi di torta sul piatto
     private List<CakePiece> pieces = new ArrayList<>();
+    // Numero massimo di pezzi che un piatto può contenere
     public static final int MAX_PIECES = 6;
 
+    // Crea un piatto con una lista iniziale di pezzi
     public Plate(List<CakePiece> pieces) {
-        this.id = counter++;
+        this.internalId = internalCounter++;
+        this.displayId = -1; // -1 indica che non è ancora stato assegnato.
         this.pieces.addAll(pieces);
     }
 
-    public int getId() {
-        return id;
+    public int getDisplayId() {
+        return displayId;
     }
 
+    public void setDisplayId(int displayId) {
+        this.displayId = displayId;
+    }
+
+    public int getInternalId() {
+        return internalId;
+    }
+
+    // Restituisce una lista non modificabile dei pezzi
     public List<CakePiece> getPieces() {
         return Collections.unmodifiableList(pieces);
     }
 
+    // Aggiunge un pezzo al piatto se non è pieno
     public void addPiece(CakePiece piece) {
         if (pieces.size() < MAX_PIECES) {
-            pieces.add(piece);
+            this.pieces.add(piece);
         }
     }
 
+    // Rimuove un pezzo specifico dal piatto
     public void removePiece(CakePiece piece) {
-        pieces.remove(piece);
-    }
-
-    public boolean canMatch(Plate other) {
-        for (CakePiece p : pieces) {
-            for (CakePiece o : other.pieces) {
-                if (p.getColor().equals(o.getColor())) return true;
-            }
-        }
-        return false;
+        this.pieces.remove(piece);
     }
 
     @Override
@@ -46,11 +60,36 @@ public class Plate {
         if (this == obj) return true;
         if (obj == null || getClass() != obj.getClass()) return false;
         Plate other = (Plate) obj;
-        return this.id == other.id;
+        return this.internalId == other.internalId;
     }
+
 
     @Override
     public int hashCode() {
-        return Objects.hash(id);
+        return Objects.hash(internalId);
+    }
+
+    // Conta quanti pezzi di un determinato colore sono presenti sul piatto
+    public int countPiecesOfColor(String color) {
+        int count = 0;
+        for (CakePiece piece : pieces) {
+            if (piece.getColor().equals(color)) {
+                count++;
+            }
+        }
+        return count;
+    }
+
+    // Crea una stringa descrittiva del contenuto del piatto
+    public String getContentsAsString() {
+        if (pieces.isEmpty()) {
+            return "vuoto";
+        }
+        // Raggruppa i pezzi per colore e conta le occorrenze
+        return pieces.stream()
+                .collect(Collectors.groupingBy(CakePiece::getColor, Collectors.counting()))
+                .entrySet().stream()
+                .map(entry -> entry.getValue() + " " + entry.getKey())
+                .collect(Collectors.joining(", "));
     }
 }
