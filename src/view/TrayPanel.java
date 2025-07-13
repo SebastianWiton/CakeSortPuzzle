@@ -4,7 +4,6 @@ import model.Plate;
 import javax.swing.*;
 import java.awt.*;
 import java.util.ArrayList;
-import java.util.Arrays;
 import java.util.Collections;
 import java.util.HashSet;
 import java.util.List;
@@ -28,10 +27,14 @@ public class TrayPanel extends JPanel {
         }
     }
 
-    public int getRows() { return rows; }
-    public int getCols() { return cols; }
+    public int getRows() {
+        return rows;
+    }
 
-    // Ripristina completamente tutti i buchi e assegna piatti iniziali
+    public int getCols() {
+        return cols;
+    }
+
     public void resetHoles() {
         removeAll();
         holes = new PlateComponent[rows * cols];
@@ -44,7 +47,6 @@ public class TrayPanel extends JPanel {
         repaint();
     }
 
-    // Genera piatti iniziali in posizioni casuali e isolate
     public void ensureInitialPlates() {
         int count = holes.length / 3;
         List<Integer> availableIndexes = new ArrayList<>();
@@ -77,7 +79,6 @@ public class TrayPanel extends JPanel {
         repaint();
     }
 
-    // Controlla se un indice è isolato rispetto ai piatti già piazzati
     private boolean isIsolated(int index, Set<Integer> used) {
         int r = index / cols;
         int c = index % cols;
@@ -95,7 +96,6 @@ public class TrayPanel extends JPanel {
         return true;
     }
 
-    // Trova il buco (o piatto) sotto un punto specifico
     public PlateComponent getHoleAtPoint(Point point) {
         Component comp = getComponentAt(point);
         if (comp instanceof PlateComponent) {
@@ -104,7 +104,6 @@ public class TrayPanel extends JPanel {
         return null;
     }
 
-    // Sostituisce un componente buco con un componente piatto
     public void replaceHoleWithPlate(PlateComponent targetHole, PlateComponent plate) {
         for (int i = 0; i < holes.length; i++) {
             if (holes[i] == targetHole) {
@@ -118,7 +117,6 @@ public class TrayPanel extends JPanel {
         }
     }
 
-    // Restituisce una lista di tutti i piatti (non buchi) presenti sul vassoio
     public List<PlateComponent> getAllPlates() {
         List<PlateComponent> plateList = new ArrayList<>();
         for (PlateComponent pc : holes) {
@@ -129,7 +127,6 @@ public class TrayPanel extends JPanel {
         return plateList;
     }
 
-    // Trova i vicini di un dato piatto
     public List<PlateComponent> getNeighbors(PlateComponent plate) {
         List<PlateComponent> neighbors = new ArrayList<>();
         int plateIndex = -1;
@@ -160,7 +157,6 @@ public class TrayPanel extends JPanel {
         return neighbors;
     }
 
-    // Rimuove i piatti completati o vuoti e restituisce una lista dei loro modelli
     public List<Plate> getAndRemoveCompletedOrEmptyPlates() {
         List<Plate> removedPlates = new ArrayList<>();
         boolean changed = false;
@@ -183,5 +179,14 @@ public class TrayPanel extends JPanel {
 
     public boolean removeCompletedOrEmptyPlates() {
         return !getAndRemoveCompletedOrEmptyPlates().isEmpty();
+    }
+
+    public PlateComponent getPlateByDisplayId(int displayId) {
+        for (PlateComponent pc : getAllPlates()) {
+            if (pc.getModel().getDisplayId() == displayId) {
+                return pc;
+            }
+        }
+        return null;
     }
 }

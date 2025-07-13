@@ -1,8 +1,6 @@
 package controller;
 
-import model.EmbaspManager;
-import model.GameLogic;
-import model.Plate;
+import model.*;
 import utilities.SoundPlayer;
 import view.GamePanel;
 import view.PlateComponent;
@@ -16,8 +14,8 @@ import java.awt.dnd.DropTarget;
 import java.awt.dnd.DropTargetAdapter;
 import java.awt.dnd.DropTargetDropEvent;
 import java.awt.dnd.DnDConstants;
-import java.awt.event.ActionEvent;
 import java.awt.event.ActionListener;
+import java.awt.event.ActionEvent;
 import java.util.ArrayList;
 import java.util.List;
 
@@ -157,37 +155,16 @@ public class GameController {
 
     private void processGameLogic(PlateComponent justPlacedPlate) {
         TrayPanel tray = panel.getTrayPanel();
-        List<PlateComponent> neighbors = tray.getNeighbors(justPlacedPlate);
-        boolean interactionOccurred = false;
-
         String placedContent = justPlacedPlate.getModel().getContentsAsString();
         gameLog.add("--- Mossa #" + logMoveCounter++ + ": Piazzato Piatto " + justPlacedPlate.getModel().getDisplayId() + " con [" + placedContent + "] ---");
 
-        for (PlateComponent neighbor : neighbors) {
+        // La logica di aggregazione iniziale può rimanere in Java per semplicità
+        for (PlateComponent neighbor : tray.getNeighbors(justPlacedPlate)) {
             for (String color : neighbor.getUniqueColors()) {
                 if (justPlacedPlate.getUniqueColors().contains(color)) {
-                    interactionOccurred = true;
-                    String neighborContent = neighbor.getModel().getContentsAsString();
-                    gameLog.add("  > Interazione con Piatto " + neighbor.getModel().getDisplayId() + " (contenuto: ["+ neighborContent +"])");
-
-                    String neighborBefore = neighbor.getModel().getContentsAsString();
-                    String placedBefore = justPlacedPlate.getModel().getContentsAsString();
-
-                    int moved = gameLogic.movePieces(neighbor, justPlacedPlate, color);
-
-                    if (moved > 0) {
-                        String neighborAfter = neighbor.getModel().getContentsAsString();
-                        String placedAfter = justPlacedPlate.getModel().getContentsAsString();
-                        gameLog.add("    - Spostati " + moved + " pezzi " + color + ".");
-                        gameLog.add("    - Piatto " + neighbor.getModel().getDisplayId() + ": [" + neighborBefore + "] -> [" + neighborAfter + "]");
-                        gameLog.add("    - Piatto " + justPlacedPlate.getModel().getDisplayId() + ": [" + placedBefore + "] -> [" + placedAfter + "]");
-                    }
+                    logAction("Aggregazione", neighbor, justPlacedPlate, color, gameLogic.movePieces(neighbor, justPlacedPlate, color));
                 }
             }
-        }
-
-        if (!interactionOccurred) {
-            gameLog.add("  > Nessuna interazione con i vicini.");
         }
 
         logRemovedPlates(tray.getAndRemoveCompletedOrEmptyPlates(), " (dopo aggregazione)");
@@ -199,38 +176,42 @@ public class GameController {
 
     private void runGameLogicStep() {
         TrayPanel tray = panel.getTrayPanel();
+
+        // Converte lo stato del gioco in fatti ASP
+        List<Object> facts = new ArrayList<>();
+        List<PlateComponent> allPlates = tray.getAllPlates();
+        for (PlateComponent pc : allPlates) {
+            int plateId = pc.getModel().getDisplayId();
+            if (plateId == -1) continue;
+            for (String color : pc.getUniqueColors()) {
+                int quantity = pc.getModel().countPiecesOfColor(color);
+                facts.add(new PlateInfo(plateId, color, quantity));
+            }
+            for (PlateComponent neighbor : tray.getNeighbors(pc)) {
+                facts.add(new NeighborInfo(plateId, neighbor.getModel().getDisplayId()));
+            }
+        }
+
+        // Chiede a EmbASP la prossima mossa
+        Move nextMove = manager.getNextMove(facts);
+
         boolean actionTaken = false;
+        if (nextMove != null) {
+            // Esegue la mossa suggerita da EmbASP
+            PlateComponent donator = tray.getPlateByDisplayId(nextMove.donatorId);
+            PlateComponent receiver = tray.getPlateByDisplayId(nextMove.receiverId);
+            String color = nextMove.color;
 
-        searchLoop:
-        for (PlateComponent donator : tray.getAllPlates()) {
-            for (String color : donator.getUniqueColors()) {
-                for (PlateComponent receiver : tray.getNeighbors(donator)) {
-                    boolean canReceive = receiver.getUniqueColors().contains(color) && receiver.getModel().getPieces().size() < Plate.MAX_PIECES;
-
-                    if (canReceive) {
-                        int receiverColorCount = receiver.getModel().countPiecesOfColor(color);
-                        int donatorColorCount = donator.getModel().countPiecesOfColor(color);
-
-                        if (receiverColorCount >= donatorColorCount) {
-                            String donatorBefore = donator.getModel().getContentsAsString();
-                            String receiverBefore = receiver.getModel().getContentsAsString();
-                            int moved = gameLogic.movePieces(donator, receiver, color);
-
-                            if (moved > 0) {
-                                String donatorAfter = donator.getModel().getContentsAsString();
-                                String receiverAfter = receiver.getModel().getContentsAsString();
-                                gameLog.add("  > Catena: " + moved + " pezzi " + color + " spostati.");
-                                gameLog.add("    - Piatto " + donator.getModel().getDisplayId() + ": [" + donatorBefore + "] -> [" + donatorAfter + "]");
-                                gameLog.add("    - Piatto " + receiver.getModel().getDisplayId() + ": [" + receiverBefore + "] -> [" + receiverAfter + "]");
-                                actionTaken = true;
-                                break searchLoop;
-                            }
-                        }
-                    }
+            if (donator != null && receiver != null) {
+                int moved = gameLogic.movePieces(donator, receiver, color);
+                if (moved > 0) {
+                    logAction("Catena (ASP)", donator, receiver, color, moved);
+                    actionTaken = true;
                 }
             }
         }
 
+        // Se non ci sono mosse suggerite da ASP, prova a pulire i piatti
         if (!actionTaken) {
             List<Plate> removedPlates = tray.getAndRemoveCompletedOrEmptyPlates();
             if (!removedPlates.isEmpty()) {
@@ -239,12 +220,19 @@ public class GameController {
             }
         }
 
+        // Aggiorna la vista e controlla se fermare il timer
         tray.revalidate();
         tray.repaint();
 
         if (!actionTaken) {
             gameLoopTimer.stop();
         }
+    }
+
+    // Metodi di logging e supporto
+    private void logAction(String context, PlateComponent donator, PlateComponent receiver, String color, int moved) {
+        if (moved == 0) return;
+        gameLog.add("  > " + context + ": " + moved + " pezzi " + color + " spostati da Piatto " + donator.getModel().getDisplayId() + " a Piatto " + receiver.getModel().getDisplayId());
     }
 
     private void logRemovedPlates(List<Plate> removedPlates, String context) {
