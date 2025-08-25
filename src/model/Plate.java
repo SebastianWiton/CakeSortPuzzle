@@ -7,9 +7,8 @@ import java.util.Objects;
 import java.util.stream.Collectors;
 
 public class Plate {
-    // Contatore statico per garantire ID interni univoci per ogni piatto creato.
+    /* Per garantire di distinguere due piatti con lo steso contenuto */
     private static int internalCounter = 0;
-    // ID tecnico univoco, usato per confronti e hashing.
     private final int internalId;
     // ID visualizzato all'utente , assegnato dal controller.
     private int displayId;
@@ -22,7 +21,8 @@ public class Plate {
     // Crea un piatto con una lista iniziale di pezzi
     public Plate(List<CakePiece> pieces) {
         this.internalId = internalCounter++;
-        this.displayId = -1; // -1 indica che non è ancora stato assegnato.
+        // per piatti non ancora in gioco
+        this.displayId = -1;
         this.pieces.addAll(pieces);
     }
 

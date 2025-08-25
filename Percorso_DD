@@ -1,0 +1,19 @@
+Percorso Drag-Drop
+------------------------------------------------------------
+In GameController, nel metodo setupPlateDrag
+La riga exportAsDrag(...) dice al sistema Swing che l'utente vuole iniziare a trascinare
+questo componente e di attivare il meccanismo di Drag and Drop."
+-------------------------------------------------------------
+Il sistema chiede al TransferHandler di impacchettare i dati
+Con         protected Transferable createTransferable(JComponent c) {
+                // (riga 101)
+                return new PlateTransferable((PlateComponent) c);
+creo un platetransferable passandogli il platecomponent che è stato cliccato
+-------------------------------------------------------------
+In PlateTransferable.java, viene estratto e memorizzato il modello Plate con
+this.plateModel = plateComp.getModel();
+-------------------------------------------------------------
+L'utente rilascia il mouse sul TrayPanel, che fa scattare l'evento drop in setupDragandDrop
+--------------------------------------------------------------
+All'interno di drop, viene preso il PlateTransferable, viene controllato il plateflavor,
+accettato il drop. Ora ha il platemodel e può procedere

@@ -3,6 +3,7 @@ package model;
 import it.unical.mat.embasp.languages.Id;
 import it.unical.mat.embasp.languages.Param;
 
+// Mappa la classe Java NeighborInfo sul fatto ASP neighborInfo(ID1, ID2)
 @Id("neighborInfo")
 public class NeighborInfo {
     @Param(0)

@@ -13,7 +13,7 @@ L'obiettivo del gioco è ripulire il vassoio (`Tray`) unendo pezzi di torta dell
 
 ### Elementi di Gioco
 *   **Vassoio (Tray):** Una griglia dove i piatti vengono posizionati.
-*   **Tavolo (Table):** Un'area superiore che contiene una riserva di nuovi piatti.
+*   **Tavolo (Table):** Un'area superiore che contiene i piatti che possono essere posizionati.
 *   **Piatto (Plate):** Un contenitore che può ospitare fino a **6 pezzi di torta**. Ogni piatto sul vassoio ha un ID numerico sequenziale (es. Piatto 1, Piatto 2) per essere facilmente identificato.
 
 ### Meccanica Principale
@@ -24,7 +24,6 @@ L'obiettivo del gioco è ripulire il vassoio (`Tray`) unendo pezzi di torta dell
 3.  **Rimozione dei Piatti:** Un piatto viene rimosso dal vassoio quando è **completo** (6 pezzi dello stesso colore) o **vuoto**.
 
 ## Funzionalità Implementate
-*   **Motore di Gioco Asincrono:** Le reazioni a catena sono gestite da un `javax.swing.Timer` per rendere visibile ogni "micro-mossa" all'utente.
 *   **Logica AI con EmbASP:** Le decisioni su quale mossa eseguire sono delegate a un solver **ASP (Answer Set Programming)**.
 *   **Cronologia Mosse Dettagliata:** Un pulsante "Cronologia" mostra un log descrittivo di ogni azione avvenuta.
 *   **Controlli di Gioco:** Pulsanti per resettare la partita, generare nuovi piatti e tornare al menu.
@@ -52,8 +51,7 @@ La strategia dell'AI è la seguente:
 
 ## Come Eseguire il Progetto
 
-1. **Configurazione delle Dipendenze:** Assicurarsi che il file `lib/embASP.jar` sia aggiunto come libreria esterna nelle impostazioni del progetto.
-2.  **Configurazione delle Risorse:**
+1. **Configurazione delle Risorse:**
     *   Nel pannello di progetto, cliccare con il tasto destro sulla cartella `resources`.
     *   Selezionare **Mark Directory as -> Resources Root**.
     

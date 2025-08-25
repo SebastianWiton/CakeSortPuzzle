@@ -86,7 +86,10 @@ public class GameController {
         for (PlateComponent plate : table.getPlateComponents()) {
             setupPlateDrag(plate);
         }
-
+        /* Controlla se l'oggetto trascinato è del tipo giusto (PlateTransferable.plateFlavor)
+        * Se si, accetta il drop, recupera i dati di plate e point, identifica su quale
+        * targetHole è avvenuto il rilascio, chiama handleDrop per gestire la logica
+        * del piazzamento */
         new DropTarget(tray, new DropTargetAdapter() {
             @Override
             public void drop(DropTargetDropEvent dtde) {
@@ -117,6 +120,7 @@ public class GameController {
     }
 
     private void setupPlateDrag(PlateComponent plate) {
+        /* Imposta TransferHandler così che PlateComponent può essere trascinato */
         plate.setTransferHandler(new TransferHandler("plate") {
             @Override
             public int getSourceActions(JComponent c) { return MOVE; }
@@ -124,6 +128,7 @@ public class GameController {
             protected Transferable createTransferable(JComponent c) { return new PlateTransferable((PlateComponent) c); }
         });
 
+        /* Avvia il drag-and-drop (exportAsDrag) quando il mouse viene premuto */
         plate.addMouseListener(new java.awt.event.MouseAdapter() {
             public void mousePressed(java.awt.event.MouseEvent e) {
                 JComponent comp = (JComponent) e.getSource();
@@ -134,6 +139,8 @@ public class GameController {
     }
 
     public void handleDrop(PlateComponent targetHole, PlateComponent draggedPlate) {
+        /* Gestisce il piazzamento di un piatto, aggiornando il modello (spostando il piatto)
+        * e avviando la logica di gioco (processGameLogic) */
         if (gameLoopTimer.isRunning()) {
             gameLoopTimer.stop();
         }
@@ -154,11 +161,15 @@ public class GameController {
     }
 
     private void processGameLogic(PlateComponent justPlacedPlate) {
+        /* Responsabile delle reazioni a catena, prima logga l'azione dell'utente, esegue
+        * l'aggregazione iniziale puramente con java spostando i pezzi dei vicini,
+        * controlla se sono stati completati dei piatti e gli rimuove, avvia gameLoopTimer
+        * che prenderà il controllo delle mosse successive  */
         TrayPanel tray = panel.getTrayPanel();
         String placedContent = justPlacedPlate.getModel().getContentsAsString();
         gameLog.add("--- Mossa #" + logMoveCounter++ + ": Piazzato Piatto " + justPlacedPlate.getModel().getDisplayId() + " con [" + placedContent + "] ---");
 
-        // La logica di aggregazione iniziale può rimanere in Java per semplicità
+
         for (PlateComponent neighbor : tray.getNeighbors(justPlacedPlate)) {
             for (String color : neighbor.getUniqueColors()) {
                 if (justPlacedPlate.getUniqueColors().contains(color)) {
@@ -177,7 +188,7 @@ public class GameController {
     private void runGameLogicStep() {
         TrayPanel tray = panel.getTrayPanel();
 
-        // Converte lo stato del gioco in fatti ASP
+        /* Scansiona il vassaio e crea una lista di fatti PlateInfo e NeighborInfo */
         List<Object> facts = new ArrayList<>();
         List<PlateComponent> allPlates = tray.getAllPlates();
         for (PlateComponent pc : allPlates) {
@@ -197,7 +208,7 @@ public class GameController {
 
         boolean actionTaken = false;
         if (nextMove != null) {
-            // Esegue la mossa suggerita da EmbASP
+            // Esegue la mossa suggerita da EmbASP e logga l'azione
             PlateComponent donator = tray.getPlateByDisplayId(nextMove.donatorId);
             PlateComponent receiver = tray.getPlateByDisplayId(nextMove.receiverId);
             String color = nextMove.color;
@@ -211,7 +222,7 @@ public class GameController {
             }
         }
 
-        // Se non ci sono mosse suggerite da ASP, prova a pulire i piatti
+        // Se non ci sono mosse suggerite da ASP, prova a rimuovere i piatti
         if (!actionTaken) {
             List<Plate> removedPlates = tray.getAndRemoveCompletedOrEmptyPlates();
             if (!removedPlates.isEmpty()) {
@@ -251,6 +262,7 @@ public class GameController {
     }
 
     public void generateNewPlates() {
+        // Rigenera piatti sul tavolo e gli rende trascinabili con setupPlateDrag
         TablePanel table = panel.getTablePanel();
         table.removeAll();
         table.getPlateComponents().clear();

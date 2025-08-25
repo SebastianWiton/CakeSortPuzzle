@@ -4,7 +4,6 @@
 %
 % plateInfo(ID, Colore, Quantita).
 %   - Descrive quanti pezzi di un certo colore ci sono su un piatto.
-%   - Esempio: plateInfo(1, "blue", 3). significa che il piatto 1 ha 3 pezzi blu.
 %
 % neighborInfo(ID1, ID2).
 %   - Indica che il piatto ID1 è vicino al piatto ID2.
@@ -13,9 +12,9 @@
 % --- REGOLE INTERMEDIE  ---
 
 % Un piatto ha spazio se il totale dei suoi pezzi è minore di 6.
-% Prima calcoliamo il totale dei pezzi su ogni piatto.
+% Calcolo del totale dei pezzi su ogni piatto.
 totalPieces(ID, Total) :- plateInfo(ID, _, _), #sum{Q, C : plateInfo(ID, C, Q)} = Total.
-% Poi definiamo quando un piatto ha spazio.
+% Definizione di quando un piatto ha spazio.
 plateHasSpace(ID) :- totalPieces(ID, T), T < 6.
 
 % Una mossa è "considerabile" se soddisfa le condizioni di base per uno spostamento.
@@ -55,11 +54,9 @@ bestMove(D, R, C) :- strategicMove(D, R, C), not is_completion_possible.
 
 % --- OUTPUT ---
 %
-% Il solver da una sola tra le mosse migliori trovate
-% Se ci sono più mosse "migliori" (es. due diverse mosse di completamento),
-% il solver ne sceglierà una non deterministicamente.
+% Scegli esattamente una mossa tra tutte le bestMove disponibili
 1 { move(D, R, C) : bestMove(D, R, C) } 1.
-% massimizza il numero di pezzi sul piatto donatore che viene svuotato
+% Se ci sono più bestMove, scegli quella il cui piatto donatore è il più pieno
 #maximize{ Q@1, D, R, C : move(D, R, C), totalPieces(D, Q) }.
 
 % Dice al solver di mostrare solo il risultato 'move/3' e di nascondere tutti i fatti intermedi.

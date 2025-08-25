@@ -11,15 +11,15 @@ public class GameLogic {
     public GameLogic() {
         // this.ai = ai;
     }
+    // Contiene regole immediate del gioco che non richiedono l'AI
 
-    /**
-     * Sposta i pezzi di un dato colore da un piatto donatore a uno ricevente.
-     * Gestisce il trasferimento parziale se il ricevente si riempie.
-     * @return il numero di pezzi effettivamente spostati.
-     */
+    /* Prende in input due componenti grafici (donator e receiver) e un colore
+    * Accede ai loro modelli
+    * Crea una lista di tutti i pezzi del colore specificato presenti sul donatore
+    * Itera sulla lista e per ogni pezzo, lo rimuove dal modello del donatore e lo aggiunge
+    * a quello del ricevente, a meno che il ricevente sia pieno  */
     public int movePieces(PlateComponent donator, PlateComponent receiver, String color) {
         List<CakePiece> piecesToMove = new ArrayList<>();
-        // Trova tutti i pezzi del colore giusto sul donatore
         for (CakePiece piece : donator.getModel().getPieces()) {
             if (piece.getColor().equals(color)) {
                 piecesToMove.add(piece);
@@ -28,7 +28,6 @@ public class GameLogic {
 
         int piecesMoved = 0;
         for (CakePiece piece : piecesToMove) {
-            // Controlla se c'è ancora spazio sul ricevente
             if (receiver.getModel().getPieces().size() < Plate.MAX_PIECES) {
                 donator.getModel().removePiece(piece);
                 receiver.getModel().addPiece(piece);

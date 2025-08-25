@@ -3,6 +3,7 @@ package model;
 import it.unical.mat.embasp.languages.Id;
 import it.unical.mat.embasp.languages.Param;
 
+// Un'oggetto di questa classe corrisponde a un fatto ASP chiamato plateInfo
 @Id("plateInfo")
 public class PlateInfo {
     @Param(0)

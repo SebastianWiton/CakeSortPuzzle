@@ -12,7 +12,7 @@ public class GamePanel extends JPanel {
     private TrayPanel tray;
     private JButton refill;
     private JButton reset;
-    private JButton logButton; // Pulsante per la cronologia
+    private JButton logButton;
 
     public GamePanel(AppFrame app) {
         setLayout(new BorderLayout());

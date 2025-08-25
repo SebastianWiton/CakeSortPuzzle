@@ -3,6 +3,7 @@ package model;
 import it.unical.mat.embasp.languages.Id;
 import it.unical.mat.embasp.languages.Param;
 
+// Mappa la classe Java Move sul predicato di output move(DonatorID, ReceiverID, Color)
 @Id("move")
 public class Move {
     @Param(0)

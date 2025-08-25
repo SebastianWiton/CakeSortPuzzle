@@ -37,7 +37,6 @@ public class EmbaspManager {
             System.err.println("Errore nel caricamento delle regole ASP da: " + encodingResourcePath);
             e.printStackTrace();
         }
-        // La mappatura tramite annotazioni non richiede codice qui.
     }
 
     public Move getNextMove(List<Object> facts) {
