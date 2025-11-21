@@ -18,6 +18,8 @@ import java.awt.event.ActionListener;
 import java.awt.event.ActionEvent;
 import java.util.ArrayList;
 import java.util.List;
+import java.util.Set;
+import java.util.HashSet;
 
 public class GameController {
     private final GamePanel panel;
@@ -161,19 +163,48 @@ public class GameController {
     }
 
     private void processGameLogic(PlateComponent justPlacedPlate) {
-        /* Responsabile delle reazioni a catena, prima logga l'azione dell'utente, esegue
-        * l'aggregazione iniziale puramente con java spostando i pezzi dei vicini,
-        * controlla se sono stati completati dei piatti e gli rimuove, avvia gameLoopTimer
-        * che prenderà il controllo delle mosse successive  */
         TrayPanel tray = panel.getTrayPanel();
         String placedContent = justPlacedPlate.getModel().getContentsAsString();
         gameLog.add("--- Mossa #" + logMoveCounter++ + ": Piazzato Piatto " + justPlacedPlate.getModel().getDisplayId() + " con [" + placedContent + "] ---");
 
 
         for (PlateComponent neighbor : tray.getNeighbors(justPlacedPlate)) {
-            for (String color : neighbor.getUniqueColors()) {
-                if (justPlacedPlate.getUniqueColors().contains(color)) {
-                    logAction("Aggregazione", neighbor, justPlacedPlate, color, gameLogic.movePieces(neighbor, justPlacedPlate, color));
+            Set<String> commonColors = new HashSet<>(justPlacedPlate.getUniqueColors());
+            commonColors.retainAll(neighbor.getUniqueColors());
+
+            for (String color : commonColors) {
+                int piecesOnNewPlate = justPlacedPlate.getModel().countPiecesOfColor(color);
+                int piecesOnNeighbor = neighbor.getModel().countPiecesOfColor(color);
+
+                PlateComponent donator = null;
+                PlateComponent receiver = null;
+
+
+                if (piecesOnNeighbor > piecesOnNewPlate) {
+                    // Il vicino ha più pezzi, quindi è il ricevente
+                    donator = justPlacedPlate;
+                    receiver = neighbor;
+                } else if (piecesOnNewPlate > piecesOnNeighbor) {
+                    // Il nuovo piatto ha più pezzi, quindi è il ricevente
+                    donator = neighbor;
+                    receiver = justPlacedPlate;
+                } else {
+                    // Caso di parità
+                    // La mossa migliore è quella che "purifica" un piatto.
+                    // Scegli come donatore quello con più varietà di colori.
+                    if (justPlacedPlate.getUniqueColors().size() > neighbor.getUniqueColors().size()) {
+                        donator = justPlacedPlate;
+                        receiver = neighbor;
+                    } else {
+                        // Se la varietà è uguale o minore, il vicino dona (manteniamo un default)
+                        donator = neighbor;
+                        receiver = justPlacedPlate;
+                    }
+                }
+
+                if (donator != null && receiver != null) {
+                    int moved = gameLogic.movePieces(donator, receiver, color);
+                    logAction("Aggregazione", donator, receiver, color, moved);
                 }
             }
         }
@@ -182,8 +213,13 @@ public class GameController {
         tray.revalidate();
         tray.repaint();
 
-        gameLoopTimer.start();
+        // Avvia il timer per le mosse a catena successive gestite dall'IA
+        if (!gameLoopTimer.isRunning()) {
+            gameLoopTimer.start();
+        }
     }
+
+
 
     private void runGameLogicStep() {
         TrayPanel tray = panel.getTrayPanel();
@@ -202,6 +238,11 @@ public class GameController {
                 facts.add(new NeighborInfo(plateId, neighbor.getModel().getDisplayId()));
             }
         }
+
+        for (Object fact : facts) {
+            System.out.println(fact.toString()); // Usiamo toString() per avere una rappresentazione
+        }
+        System.out.println("-----------------------------");
 
         // Chiede a EmbASP la prossima mossa
         Move nextMove = manager.getNextMove(facts);

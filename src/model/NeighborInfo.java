@@ -22,4 +22,8 @@ public class NeighborInfo {
     public void setId1(int id1) { this.id1 = id1; }
     public int getId2() { return id2; }
     public void setId2(int id2) { this.id2 = id2; }
+    @Override
+    public String toString() {
+        return "neighborInfo(" + id1 + "," + id2 + ").";
+    }
 }
