@@ -317,6 +317,57 @@ public class GameController {
         table.repaint();
         panel.getRefillButton().setEnabled(false);
     }
+    public void suggestPlacement() {
+        List<Object> facts = new ArrayList<>();
+
+        // Fatto per indicare quale piatto si vuole inserire.
+        // Per semplicità, scegliamo il primo piatto disponibile sul tavolo.
+        List<PlateComponent> tablePlates = panel.getTablePanel().getPlateComponents();
+        if (tablePlates.isEmpty()) {
+            JOptionPane.showMessageDialog(panel, "Nessun piatto da inserire sul tavolo.", "Suggerimento", JOptionPane.INFORMATION_MESSAGE);
+            return;
+        }
+        PlateComponent plateToInsert = tablePlates.get(0);
+        facts.add(new PiattoDaInserireInfo(plateToInsert.getModel().getInternalId()));
+
+        // Fatti su tutti i piatti (sia sul tavolo che sul vassoio)
+        for (PlateComponent pc : tablePlates) {
+            for (String color : pc.getUniqueColors()) {
+                int quantity = pc.getModel().countPiecesOfColor(color);
+                facts.add(new PlateInfo(pc.getModel().getInternalId(), color, quantity));
+            }
+        }
+        for (PlateComponent pc : panel.getTrayPanel().getAllPlates()) {
+            for (String color : pc.getUniqueColors()) {
+                int quantity = pc.getModel().countPiecesOfColor(color);
+                facts.add(new PlateInfo(pc.getModel().getDisplayId(), color, quantity));
+            }
+        }
+
+        // Fatti sulla griglia
+        panel.getTrayPanel().addCellaFacts(facts);
+
+        // Blocco stampa di debug
+        System.out.println("--- FATTI INVIATI AL SOLVER ---");
+        for (Object fact : facts) {
+            System.out.println(fact.toString());
+        }
+        System.out.println("---------------------------------");
+
+
+        // Chiama l'AI per il suggerimento
+        Place suggestion = manager.getBestPlacement(facts);
+
+        // Mostra il suggerimento all'utente
+        if (suggestion != null) {
+            String message = "L'AI suggerisce di piazzare il piatto con ID (interno) " + suggestion.getId() +
+                    " nella cella (" + suggestion.getX() + ", " + suggestion.getY() + ").";
+            JOptionPane.showMessageDialog(panel, message, "Suggerimento Mossa", JOptionPane.INFORMATION_MESSAGE);
+            panel.getTrayPanel().highlightSlot(suggestion.getX(), suggestion.getY());
+        } else {
+            JOptionPane.showMessageDialog(panel, "L'AI non ha trovato una mossa di piazzamento valida.", "Suggerimento Mossa", JOptionPane.WARNING_MESSAGE);
+        }
+    }
 
     public void resetGame() {
         gameLoopTimer.stop();

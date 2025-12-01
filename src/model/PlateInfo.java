@@ -30,6 +30,7 @@ public class PlateInfo {
     public void setQuantity(int quantity) { this.quantity = quantity; }
     @Override
     public String toString() {
-        return "plateInfo(" + id + "," + color + "," + quantity + ").";
+        String idString = "piatto" + id;
+        return "piatto(" + idString + ", " + quantity + ", " + color + ").";
     }
 }

@@ -13,6 +13,7 @@ public class GamePanel extends JPanel {
     private JButton refill;
     private JButton reset;
     private JButton logButton;
+    private JButton suggestButton;
 
     public GamePanel(AppFrame app) {
         setLayout(new BorderLayout());
@@ -53,10 +54,17 @@ public class GamePanel extends JPanel {
 
         logButton = new JButton("Cronologia");
 
+        suggestButton = new JButton("Suggerisci Mossa");
+        suggestButton.addActionListener(e -> {
+            SoundPlayer.playSound("button.wav");
+            controller.suggestPlacement();
+        });
+
         // Pannello inferiore per i pulsanti
         JPanel bot = new JPanel();
         bot.add(refill);
         bot.add(reset);
+        bot.add(suggestButton);
         bot.add(logButton);
         add(bot, BorderLayout.SOUTH);
 
@@ -71,4 +79,5 @@ public class GamePanel extends JPanel {
     public TrayPanel getTrayPanel() { return tray; }
     public JButton getRefillButton() { return refill; }
     public JButton getLogButton() { return logButton; }
+    public JButton getSuggestButton() { return suggestButton; }
 }

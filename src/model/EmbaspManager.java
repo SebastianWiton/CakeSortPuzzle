@@ -70,4 +70,33 @@ public class EmbaspManager {
 
         return null;
     }
+    public Place getBestPlacement(List<Object> facts) {
+        InputProgram factsProgram = new ASPInputProgram();
+        for (Object fact : facts) {
+            try {
+                factsProgram.addObjectInput(fact);
+            } catch (Exception e) {
+                e.printStackTrace();
+            }
+        }
+        handler.addProgram(factsProgram);
+        Output output = handler.startSync();
+        handler.removeProgram(factsProgram);
+
+        AnswerSets answerSets = (AnswerSets) output;
+        if (!answerSets.getAnswersets().isEmpty()) {
+            try {
+                AnswerSet optimalSet = answerSets.getAnswersets().get(0);
+                for (Object obj : optimalSet.getAtoms()) {
+                    if (obj instanceof Place) {
+                        return (Place) obj;
+                    }
+                }
+            } catch (Exception e) {
+                e.printStackTrace();
+            }
+        }
+        return null;
+    }
+    
 }
