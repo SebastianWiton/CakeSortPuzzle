@@ -163,6 +163,7 @@ public class GameController {
     }
 
     private void processGameLogic(PlateComponent justPlacedPlate) {
+
         TrayPanel tray = panel.getTrayPanel();
         String placedContent = justPlacedPlate.getModel().getContentsAsString();
         gameLog.add("--- Mossa #" + logMoveCounter++ + ": Piazzato Piatto " + justPlacedPlate.getModel().getDisplayId() + " con [" + placedContent + "] ---");
