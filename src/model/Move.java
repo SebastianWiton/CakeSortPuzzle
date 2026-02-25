@@ -20,4 +20,15 @@ public class Move {
         this.receiverId = receiverId;
         this.color = color;
     }
+    public int getDonatorId() { return donatorId; }
+    public void setDonatorId(int donatorId) { this.donatorId = donatorId; }
+
+    public int getReceiverId() { return receiverId; }
+    public void setReceiverId(int receiverId) { this.receiverId = receiverId; }
+
+    public String getColor() { return color; }
+    public void setColor(String color) {
+        // Rimuove le virgolette se presenti
+        this.color = color.replace("\"", "");
+    }
 }

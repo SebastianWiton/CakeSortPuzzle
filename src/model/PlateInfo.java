@@ -7,11 +7,11 @@ import it.unical.mat.embasp.languages.Param;
 @Id("plateInfo")
 public class PlateInfo {
     @Param(0)
-    private int id;
+    public int id;
     @Param(1)
-    private String color;
+    public String color;
     @Param(2)
-    private int quantity;
+    public int quantity;
 
     public PlateInfo() {}
 

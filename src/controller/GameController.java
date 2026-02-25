@@ -10,16 +10,12 @@ import view.TrayPanel;
 import javax.swing.*;
 import java.awt.*;
 import java.awt.datatransfer.Transferable;
+import java.awt.dnd.DnDConstants;
 import java.awt.dnd.DropTarget;
 import java.awt.dnd.DropTargetAdapter;
 import java.awt.dnd.DropTargetDropEvent;
-import java.awt.dnd.DnDConstants;
-import java.awt.event.ActionListener;
-import java.awt.event.ActionEvent;
 import java.util.ArrayList;
 import java.util.List;
-import java.util.Set;
-import java.util.HashSet;
 
 public class GameController {
     private final GamePanel panel;
@@ -54,6 +50,7 @@ public class GameController {
     }
 
     private void setupGameLoopTimer() {
+        // Timer per eseguire le mosse dell'IA in sequenza
         gameLoopTimer = new Timer(250, e -> runGameLogicStep());
         gameLoopTimer.setRepeats(true);
     }
@@ -88,10 +85,7 @@ public class GameController {
         for (PlateComponent plate : table.getPlateComponents()) {
             setupPlateDrag(plate);
         }
-        /* Controlla se l'oggetto trascinato è del tipo giusto (PlateTransferable.plateFlavor)
-        * Se si, accetta il drop, recupera i dati di plate e point, identifica su quale
-        * targetHole è avvenuto il rilascio, chiama handleDrop per gestire la logica
-        * del piazzamento */
+
         new DropTarget(tray, new DropTargetAdapter() {
             @Override
             public void drop(DropTargetDropEvent dtde) {
@@ -122,7 +116,6 @@ public class GameController {
     }
 
     private void setupPlateDrag(PlateComponent plate) {
-        /* Imposta TransferHandler così che PlateComponent può essere trascinato */
         plate.setTransferHandler(new TransferHandler("plate") {
             @Override
             public int getSourceActions(JComponent c) { return MOVE; }
@@ -130,7 +123,6 @@ public class GameController {
             protected Transferable createTransferable(JComponent c) { return new PlateTransferable((PlateComponent) c); }
         });
 
-        /* Avvia il drag-and-drop (exportAsDrag) quando il mouse viene premuto */
         plate.addMouseListener(new java.awt.event.MouseAdapter() {
             public void mousePressed(java.awt.event.MouseEvent e) {
                 JComponent comp = (JComponent) e.getSource();
@@ -141,8 +133,7 @@ public class GameController {
     }
 
     public void handleDrop(PlateComponent targetHole, PlateComponent draggedPlate) {
-        /* Gestisce il piazzamento di un piatto, aggiornando il modello (spostando il piatto)
-        * e avviando la logica di gioco (processGameLogic) */
+        // Ferma il timer se era in esecuzione per evitare conflitti durante il drop
         if (gameLoopTimer.isRunning()) {
             gameLoopTimer.stop();
         }
@@ -155,6 +146,7 @@ public class GameController {
         tray.replaceHoleWithPlate(targetHole, draggedPlate);
         table.removePlate(draggedPlate);
 
+        // Passa il controllo alla logica di gioco (ora puramente IA)
         processGameLogic(draggedPlate);
 
         if (table.isEmpty()) {
@@ -162,88 +154,53 @@ public class GameController {
         }
     }
 
-    private void processGameLogic(PlateComponent justPlacedPlate) {
 
+    private void processGameLogic(PlateComponent justPlacedPlate) {
         TrayPanel tray = panel.getTrayPanel();
         String placedContent = justPlacedPlate.getModel().getContentsAsString();
+
+        //  Log dell'azione utente
         gameLog.add("--- Mossa #" + logMoveCounter++ + ": Piazzato Piatto " + justPlacedPlate.getModel().getDisplayId() + " con [" + placedContent + "] ---");
 
-
-        for (PlateComponent neighbor : tray.getNeighbors(justPlacedPlate)) {
-            Set<String> commonColors = new HashSet<>(justPlacedPlate.getUniqueColors());
-            commonColors.retainAll(neighbor.getUniqueColors());
-
-            for (String color : commonColors) {
-                int piecesOnNewPlate = justPlacedPlate.getModel().countPiecesOfColor(color);
-                int piecesOnNeighbor = neighbor.getModel().countPiecesOfColor(color);
-
-                PlateComponent donator = null;
-                PlateComponent receiver = null;
-
-
-                if (piecesOnNeighbor > piecesOnNewPlate) {
-                    // Il vicino ha più pezzi, quindi è il ricevente
-                    donator = justPlacedPlate;
-                    receiver = neighbor;
-                } else if (piecesOnNewPlate > piecesOnNeighbor) {
-                    // Il nuovo piatto ha più pezzi, quindi è il ricevente
-                    donator = neighbor;
-                    receiver = justPlacedPlate;
-                } else {
-                    // Caso di parità
-                    // La mossa migliore è quella che "purifica" un piatto.
-                    // Scegli come donatore quello con più varietà di colori.
-                    if (justPlacedPlate.getUniqueColors().size() > neighbor.getUniqueColors().size()) {
-                        donator = justPlacedPlate;
-                        receiver = neighbor;
-                    } else {
-                        // Se la varietà è uguale o minore, il vicino dona (manteniamo un default)
-                        donator = neighbor;
-                        receiver = justPlacedPlate;
-                    }
-                }
-
-                if (donator != null && receiver != null) {
-                    int moved = gameLogic.movePieces(donator, receiver, color);
-                    logAction("Aggregazione", donator, receiver, color, moved);
-                }
-            }
-        }
-
-        logRemovedPlates(tray.getAndRemoveCompletedOrEmptyPlates(), " (dopo aggregazione)");
+        //Aggiorna graficamente il vassoio per mostrare il piatto nella sua posizione iniziale
         tray.revalidate();
         tray.repaint();
 
-        // Avvia il timer per le mosse a catena successive gestite dall'IA
+        runGameLogicStep();
+
         if (!gameLoopTimer.isRunning()) {
             gameLoopTimer.start();
         }
     }
 
-
-
     private void runGameLogicStep() {
         TrayPanel tray = panel.getTrayPanel();
 
-        /* Scansiona il vassaio e crea una lista di fatti PlateInfo e NeighborInfo */
+        /* Scansiona il vassoio e crea una lista di fatti PlateInfo e NeighborInfo */
         List<Object> facts = new ArrayList<>();
         List<PlateComponent> allPlates = tray.getAllPlates();
+
+        // Generazione Fatti: ricalcolati da zero ad ogni tick
         for (PlateComponent pc : allPlates) {
             int plateId = pc.getModel().getDisplayId();
             if (plateId == -1) continue;
+
+            // Fatti sul contenuto
             for (String color : pc.getUniqueColors()) {
                 int quantity = pc.getModel().countPiecesOfColor(color);
                 facts.add(new PlateInfo(plateId, color, quantity));
             }
+
+            // Fatti sui vicini
             for (PlateComponent neighbor : tray.getNeighbors(pc)) {
                 facts.add(new NeighborInfo(plateId, neighbor.getModel().getDisplayId()));
             }
         }
 
-        for (Object fact : facts) {
-            System.out.println(fact.toString()); // Usiamo toString() per avere una rappresentazione
-        }
-        System.out.println("-----------------------------");
+
+        System.out.println("--- FATTI ASP ---");
+        for (Object fact : facts) { System.out.println(fact.toString()); }
+        System.out.println("-----------------");
 
         // Chiede a EmbASP la prossima mossa
         Move nextMove = manager.getNextMove(facts);
@@ -258,25 +215,29 @@ public class GameController {
             if (donator != null && receiver != null) {
                 int moved = gameLogic.movePieces(donator, receiver, color);
                 if (moved > 0) {
-                    logAction("Catena (ASP)", donator, receiver, color, moved);
+                    // Ora ogni mossa è etichettata come "IA Move"
+                    logAction("IA Move (ASP)", donator, receiver, color, moved);
                     actionTaken = true;
+                    SoundPlayer.playSound("drag-drop.wav"); // Opzionale: suono movimento
                 }
             }
         }
 
-        // Se non ci sono mosse suggerite da ASP, prova a rimuovere i piatti
+        // Se non ci sono mosse suggerite da ASP, prova a rimuovere i piatti completi
         if (!actionTaken) {
             List<Plate> removedPlates = tray.getAndRemoveCompletedOrEmptyPlates();
             if (!removedPlates.isEmpty()) {
-                logRemovedPlates(removedPlates, " (in catena)");
+                logRemovedPlates(removedPlates, " (Completato)");
                 actionTaken = true;
+                SoundPlayer.playSound("drag-drop.wav"); // Opzionale: suono rimozione
             }
         }
 
-        // Aggiorna la vista e controlla se fermare il timer
+        // Aggiorna la vista
         tray.revalidate();
         tray.repaint();
 
+        // Se non è successo nulla in questo tick, ferma il cervello
         if (!actionTaken) {
             gameLoopTimer.stop();
         }
@@ -304,7 +265,6 @@ public class GameController {
     }
 
     public void generateNewPlates() {
-        // Rigenera piatti sul tavolo e gli rende trascinabili con setupPlateDrag
         TablePanel table = panel.getTablePanel();
         table.removeAll();
         table.getPlateComponents().clear();
@@ -318,11 +278,10 @@ public class GameController {
         table.repaint();
         panel.getRefillButton().setEnabled(false);
     }
+
     public void suggestPlacement() {
         List<Object> facts = new ArrayList<>();
 
-        // Fatto per indicare quale piatto si vuole inserire.
-        // Per semplicità, scegliamo il primo piatto disponibile sul tavolo.
         List<PlateComponent> tablePlates = panel.getTablePanel().getPlateComponents();
         if (tablePlates.isEmpty()) {
             JOptionPane.showMessageDialog(panel, "Nessun piatto da inserire sul tavolo.", "Suggerimento", JOptionPane.INFORMATION_MESSAGE);
@@ -331,7 +290,6 @@ public class GameController {
         PlateComponent plateToInsert = tablePlates.get(0);
         facts.add(new PiattoDaInserireInfo(plateToInsert.getModel().getInternalId()));
 
-        // Fatti su tutti i piatti (sia sul tavolo che sul vassoio)
         for (PlateComponent pc : tablePlates) {
             for (String color : pc.getUniqueColors()) {
                 int quantity = pc.getModel().countPiecesOfColor(color);
@@ -345,21 +303,10 @@ public class GameController {
             }
         }
 
-        // Fatti sulla griglia
         panel.getTrayPanel().addCellaFacts(facts);
 
-        // Blocco stampa di debug
-        System.out.println("--- FATTI INVIATI AL SOLVER ---");
-        for (Object fact : facts) {
-            System.out.println(fact.toString());
-        }
-        System.out.println("---------------------------------");
-
-
-        // Chiama l'AI per il suggerimento
         Place suggestion = manager.getBestPlacement(facts);
 
-        // Mostra il suggerimento all'utente
         if (suggestion != null) {
             String message = "L'AI suggerisce di piazzare il piatto con ID (interno) " + suggestion.getId() +
                     " nella cella (" + suggestion.getX() + ", " + suggestion.getY() + ").";
@@ -372,8 +319,8 @@ public class GameController {
 
     public void resetGame() {
         gameLoopTimer.stop();
-        setupControllerState();
         panel.getTrayPanel().resetHoles();
+        setupControllerState();
         generateNewPlates();
         panel.getRefillButton().setEnabled(false);
     }

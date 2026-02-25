@@ -1,66 +1,67 @@
-% --- FATTI IN INPUT  ---
+% FATTI IN INPUT
 %
 % plateInfo(ID, Colore, Quantita).
 % neighborInfo(ID1, ID2).
 
-% --- REGOLE INTERMEDIE  ---
+% REGOLE INTERMEDIE
 
 % Calcolo del totale dei pezzi su ogni piatto.
 totalPieces(ID, Total) :- plateInfo(ID, _, _), #sum{Q, C : plateInfo(ID, C, Q)} = Total.
 
+% Calcolo del numero di colori diversi su un piatto.
+numColors(ID, N) :- plateInfo(ID,_,_), N = #count{ C : plateInfo(ID, C, _) }.
+
 % Definizione di quando un piatto ha spazio.
 plateHasSpace(ID) :- totalPieces(ID, T), T < 6.
 
-% Una mossa è "strategica" se segue la logica a cascata per evitare loop.
+% Mossa strategica di base: c'è un colore in comune e spazio per riceverlo.
 strategicMove(DonatorID, ReceiverID, Color) :-
     plateInfo(DonatorID, Color, Qdon), Qdon > 0,
-    Qric = #sum{ Q : plateInfo(ReceiverID, Color, Q) },
-    Qric >= Qdon,
-    plateHasSpace(ReceiverID),
+    plateInfo(ReceiverID, Color, Qric), % Il ricevente deve avere lo stesso colore
+    plateHasSpace(ReceiverID),          % E deve avere spazio
     neighborInfo(DonatorID, ReceiverID),
     DonatorID != ReceiverID.
 
-% Una mossa è "di completamento".
+% Una mossa è di completamento solo se il piatto ricevente è monocolore
+% e la mossa lo porta a 6 pezzi totali.
 completionMove(DonatorID, ReceiverID, Color) :-
     strategicMove(DonatorID, ReceiverID, Color),
-    Qdon = #sum{Q : plateInfo(DonatorID, Color, Q)},
-    Qric = #sum{Q : plateInfo(ReceiverID, Color, Q)},
-    totalPieces(ReceiverID, TotRic),
-    Qric + Qdon == 6,
-    TotRic - Qric == 0.
+    numColors(ReceiverID, 1),
+    plateInfo(ReceiverID, Color, Qric),
+    plateInfo(DonatorID, Color, Qdon),
+    Qric + Qdon == 6.
 
-% --- OTTIMIZZAZIONE ---
+% OUTPUT E VINCOLI
 
-% Calcola il numero di colori diversi su un piatto.
-numColors(ID, N) :- plateInfo(ID,_,_), N = #count{ C : plateInfo(ID, C, _) }.
+% 1. GENERAZIONE
+move(D, R, C) | ignore(D, R, C) :- strategicMove(D, R, C).
 
-% Una mossa è "di purificazione" se rende il piatto DONATORE monocolore
-% (o vuoto), perché gli abbiamo tolto l'unico colore diverso che aveva.
-purificationMove(DonatorID, ReceiverID, Color) :-
-    strategicMove(DonatorID, ReceiverID, Color),
-    numColors(DonatorID, 2), % Il donatore aveva esattamente 2 colori.
-    plateInfo(DonatorID, Color, _), % Uno dei colori è quello che stiamo spostando.
-    % E dopo lo spostamento, tutti i pezzi di quel colore se ne sono andati.
-    % Verifichiamo che la quantità di pezzi del colore spostato sia uguale
-    % al totale dei pezzi di quel colore sul donatore.
-    Qmoved = #sum{Q : plateInfo(DonatorID, Color, Q)},
-    totalPieces(ReceiverID, TotRic),
-    TotRic + Qmoved <= 6. % Assicuriamoci che ci sia spazio per tutti.
+% 2. VINCOLI DI NUMERO
+% Non farne mai più di una alla volta
+:- #count{ D,R,C : move(D,R,C) } > 1.
 
-% --- OUTPUT E OTTIMIZZAZIONE ---
+% Se c'è almeno una mossa strategica possibile, allora devi farne una.
+:- strategicMove(_,_,_), #count{ D,R,C : move(D,R,C) } == 0.
 
-% Genera tutte le mosse possibili (candidate)
-move(D, R, C) :- strategicMove(D, R, C).
+% OTTIMIZZAZIONE
 
-% Livello 2 (massima priorità): Premia le mosse di completamento.
-#maximize{ 1@2, D, R, C : move(D, R, C), completionMove(D, R, C) }.
+% LIVELLO 10: Completamento.
+% Completa sempre i piatti se possibile.
+:~ move(D, R, C), not completionMove(D, R, C). [1@10, D, R, C]
 
-% Livello 1 (priorità intermedia): Premia le mosse che "purificano" il donatore.
-#maximize{ 1@1, D, R, C : move(D, R, C), purificationMove(D, R, C) }.
+% LIVELLO 5: La Regola dell'Ordine.
+% L'IA preferirà sempre spostare i pezzi verso i piatti più "puliti" (con meno colori misti).
+% Se mandi un pezzo su un piatto con 1 colore paghi 1. Su uno con 3 colori paghi 3.
+:~ move(D, R, C), numColors(R, ColoriRic). [ColoriRic@5, D, R, C]
 
-% Livello 0 (priorità più bassa): Come spareggio, massimizza il numero di pezzi
-% nel piatto donatore (per svuotarlo prima).
-#maximize{ Q@0, D, R, C : move(D, R, C), totalPieces(D, Q) }.
+% LIVELLO 3: Estrazione.
+% Se l'ordine è uguale, preferisci estrarre pezzi dai piatti molto disordinati per pulirli.
+% Vogliamo massimizzare i colori del donatore, quindi minimizziamo (6 - ColoriDonatore).
+:~ move(D, R, C), numColors(D, ColoriDon). [6-ColoriDon@3, D, R, C]
+
+% LIVELLO 1: Accumulo
+% Se tutto il resto è identico, unisci i pezzi al mucchio che è già più grande.
+:~ move(D, R, C), plateInfo(R, C, Qric). [6-Qric@1, D, R, C]
 
 
-#show move/3.
+% #show move/3.

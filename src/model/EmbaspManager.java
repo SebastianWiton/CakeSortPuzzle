@@ -48,49 +48,62 @@ public class EmbaspManager {
     }
 
     private Object solve(List<Object> javaFacts, Class<?> targetClass) {
-        // Ad ogni chiamata viene creato un handler nuovo per evitare problemi di stato.
         Handler handler = new DesktopHandler(new DLV2DesktopService(solverPath));
 
-        // Programma per le regole (encoding) caricato ad ogni chiamata
         InputProgram encoding = new ASPInputProgram();
         try (InputStream is = getClass().getResourceAsStream(encodingResourcePath);
              BufferedReader reader = new BufferedReader(new InputStreamReader(is, StandardCharsets.UTF_8))) {
             String rules = reader.lines().collect(Collectors.joining("\n"));
             encoding.setPrograms(rules);
         } catch (Exception e) {
-            System.err.println("ERRORE CRITICO: Impossibile caricare le regole ASP da: " + encodingResourcePath);
             e.printStackTrace();
             return null;
         }
         handler.addProgram(encoding);
 
-
         InputProgram facts = new ASPInputProgram();
+        facts.addProgram("\n");
         for (Object fact : javaFacts) {
-            try {
-                facts.addObjectInput(fact);
-            } catch (Exception e) {
-                e.printStackTrace();
+            if (fact instanceof PlateInfo) {
+                PlateInfo p = (PlateInfo) fact;
+                // Costruiamo la stringa esatta: plateInfo(1, "red", 2).
+                facts.addProgram("plateInfo(" + p.id + ", \"" + p.color + "\", " + p.quantity + ").");
+            }
+            else if (fact instanceof NeighborInfo) {
+                NeighborInfo n = (NeighborInfo) fact;
+                facts.addProgram("neighborInfo(" + n.id1 + ", " + n.id2 + ").");
             }
         }
+        System.out.println("--- INPUT INVIATO A DLV ---");
+        System.out.println(facts.getPrograms());
+        System.out.println("-------------------------");
+
+
         handler.addProgram(facts);
 
         Output output = handler.startSync();
+        System.out.println("ERRORI DLV: " + output.getErrors());
+        System.out.println("OUTPUT DLV: " + output.getOutput());
         AnswerSets answerSets = (AnswerSets) output;
 
         if (answerSets.getAnswersets().isEmpty()) {
-            System.out.println("DEBUG (EmbaspManager): Il solver non ha restituito nessuna soluzione (Answer Set vuoto).");
+            System.out.println("DEBUG (EmbaspManager): Nessun Answer Set trovato.");
             return null;
         }
 
         try {
             AnswerSet optimalSet = answerSets.getAnswersets().get(0);
+
+            // Debug: Stampa cosa ha pensato l'IA
+            System.out.println("PENSIERO IA: " + String.join(", ", optimalSet.getAnswerSet()));
+
             for (Object obj : optimalSet.getAtoms()) {
                 if (targetClass.isInstance(obj)) {
                     return targetClass.cast(obj);
                 }
             }
-            System.out.println("DEBUG (EmbaspManager): Trovato un Answer Set, ma non conteneva un oggetto di tipo " + targetClass.getSimpleName());
+            // Se arriviamo qui, c'è un answer set ma nessuna mossa
+            System.out.println("DEBUG (EmbaspManager): Trovato Answer Set ma nessuna mossa (Move).");
         } catch (Exception e) {
             e.printStackTrace();
         }
