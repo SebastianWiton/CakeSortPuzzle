@@ -92,7 +92,8 @@ public class EmbaspManager {
         }
 
         try {
-            AnswerSet optimalSet = answerSets.getAnswersets().get(0);
+            List<AnswerSet> sets = answerSets.getAnswersets();
+            AnswerSet optimalSet = sets.get(sets.size() - 1);
 
             // Debug: Stampa cosa ha pensato l'IA
             System.out.println("PENSIERO IA: " + String.join(", ", optimalSet.getAnswerSet()));
