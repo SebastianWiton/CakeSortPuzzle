@@ -24,18 +24,18 @@ L'obiettivo del gioco è ripulire il vassoio (`Tray`) spostando e unendo pezzi d
 *   **Cronologia Mosse Dettagliata:** Un log accessibile tramite pulsante mostra ogni singola mossa decisa dall'IA.
 *   **Suggeritore (Hint):** Una funzione che interroga l'IA per suggerire al giocatore lo slot migliore in cui piazzare un nuovo piatto per creare le migliori reazioni a catena.
 
-## L'Intelligenza Artificiale (Logica ASP)
+## Logica ASP
 
 La logica definita nei file ASP segue una gerarchia di priorità (implementata tramite *Weak Constraints*) progettata per imitare la strategia logica del gioco:
 
 1.  **La Regola di Completamento (Priorità Massima):**
     *   L'IA cercherà sempre, prima di ogni altra cosa, la mossa che permette di completare un piatto portandolo a 6 pezzi di un unico colore.
 2.  **La Regola dell'Ordine (Priorità Alta):**
-    *   Se non può completare, l'IA preferisce spostare i pezzi verso i piatti più "puliti". **La mossa viene penalizzata in base a quanti colori diversi ci sono sul piatto di destinazione: meno colori ci sono, più la mossa viene considerata vantaggiosa**, per evitare di creare ulteriore disordine.
+    *   Se non può completare, l'IA preferisce spostare i pezzi verso i piatti più "puliti". **La mossa viene penalizzata in base a quanti colori diversi ci sono sul piatto di destinazione: meno colori ci sono, più la mossa viene considerata vantaggiosa**.
 3.  **La Regola dell'Estrazione (Priorità Media):**
-    *   A parità di ordine della destinazione, l'IA preferisce estrarre pezzi dai piatti molto misti. Viene premiato lo spostamento di pezzi da piatti che hanno una grande varietà di colori, per cercare di svuotarli dal caos.
+    *   A parità di ordine della destinazione, l'IA preferisce estrarre pezzi dai piatti molto misti. Viene premiato lo spostamento di pezzi da piatti che hanno una grande varietà di colori.
 4.  **La Regola dell'Accumulo (Priorità Bassa):**
-    *   Come spareggio finale, se tutte le altre condizioni sono pari, l'IA sposta i pezzi verso il mucchio che è già più grande, per consolidare lo spazio.
+    *   Come spareggio finale, se tutte le altre condizioni sono pari, l'IA sposta i pezzi verso il mucchio che è già più grande.
 
 ## Logica di Gioco Dettagliata (Il Motore IA)
 
