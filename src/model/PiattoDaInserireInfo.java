@@ -6,7 +6,7 @@ import it.unical.mat.embasp.languages.Param;
 @Id("piattoDaInserire")
 public class PiattoDaInserireInfo {
     @Param(0)
-    private int id;
+    public int id;
 
     // private String color;
     // private int quantity;
@@ -20,7 +20,6 @@ public class PiattoDaInserireInfo {
     public void setId(int id) { this.id = id; }
     @Override
     public String toString() {
-        String idString = "piatto" + id;
-        return "piattoInserire(" + idString + ").";
+        return "piattoDaInserire(" + id + ").";
     }
 }

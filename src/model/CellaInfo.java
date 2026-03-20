@@ -7,13 +7,13 @@ import it.unical.mat.embasp.languages.Param;
 @Id("cella")
 public class CellaInfo {
     @Param(0)
-    private int x;
+    public int x;
 
     @Param(1)
-    private int y;
+    public int y;
 
     @Param(2)
-    private int id;
+    public int id;
 
     public CellaInfo() {}
 

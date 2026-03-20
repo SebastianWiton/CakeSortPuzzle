@@ -66,12 +66,19 @@ public class EmbaspManager {
         for (Object fact : javaFacts) {
             if (fact instanceof PlateInfo) {
                 PlateInfo p = (PlateInfo) fact;
-                // Costruiamo la stringa esatta: plateInfo(1, "red", 2).
-                facts.addProgram("plateInfo(" + p.id + ", \"" + p.color + "\", " + p.quantity + ").");
+                facts.addProgram("plateInfo(" + p.id + ", \"" + p.color + "\", " + p.quantity + ").\n");
             }
             else if (fact instanceof NeighborInfo) {
                 NeighborInfo n = (NeighborInfo) fact;
-                facts.addProgram("neighborInfo(" + n.id1 + ", " + n.id2 + ").");
+                facts.addProgram("neighborInfo(" + n.id1 + ", " + n.id2 + ").\n");
+            }
+            else if (fact instanceof CellaInfo) {
+                CellaInfo c = (CellaInfo) fact;
+                facts.addProgram("cella(" + c.getX() + "," + c.getY() + "," + c.getId() + ").\n");
+            }
+            else if (fact instanceof PiattoDaInserireInfo) {
+                PiattoDaInserireInfo p = (PiattoDaInserireInfo) fact;
+                facts.addProgram("piattoDaInserire(" + p.getId() + ").\n");
             }
         }
         System.out.println("--- INPUT INVIATO A DLV ---");
@@ -95,17 +102,36 @@ public class EmbaspManager {
             List<AnswerSet> sets = answerSets.getAnswersets();
             AnswerSet optimalSet = sets.get(sets.size() - 1);
 
-            // Debug: Stampa cosa ha pensato l'IA
-            System.out.println("PENSIERO IA: " + String.join(", ", optimalSet.getAnswerSet()));
+            List<String> atoms = optimalSet.getAnswerSet();
 
-            for (Object obj : optimalSet.getAtoms()) {
-                if (targetClass.isInstance(obj)) {
-                    return targetClass.cast(obj);
+            System.out.println("PENSIERO IA: " + String.join(", ", atoms));
+
+            for (String atom : atoms) {
+                // PARSING MANUALE per l'oggetto Place (Suggerimento)
+                if (targetClass == Place.class && atom.startsWith("place(")) {
+                    // Toglie "place(" e ")" e divide per virgola
+                    String content = atom.substring(6, atom.length() - 1);
+                    String[] p = content.split(",");
+                    return new Place(
+                            Integer.parseInt(p[0].trim()),
+                            Integer.parseInt(p[1].trim()),
+                            Integer.parseInt(p[2].trim())
+                    );
+                }
+
+                // PARSING MANUALE per l'oggetto Move
+                if (targetClass == Move.class && atom.startsWith("move(")) {
+                    // Toglie "move(" e ")" e divide per virgola
+                    String content = atom.substring(5, atom.length() - 1);
+                    String[] p = content.split(",");
+                    int d = Integer.parseInt(p[0].trim());
+                    int r = Integer.parseInt(p[1].trim());
+                    String color = p[2].trim().replace("\"", ""); // Rimuove le virgolette dal colore
+                    return new Move(d, r, color);
                 }
             }
-            // Se arriviamo qui, c'è un answer set ma nessuna mossa
-            System.out.println("DEBUG (EmbaspManager): Trovato Answer Set ma nessuna mossa (Move).");
         } catch (Exception e) {
+            System.err.println("Errore durante il parsing manuale: " + e.getMessage());
             e.printStackTrace();
         }
         return null;
