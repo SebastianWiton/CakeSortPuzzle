@@ -57,10 +57,16 @@ place(X, Y, ID) | skipPlace(X, Y, ID) :- piattoDaInserire(ID), cella(X, Y, -1).
 :- piattoDaInserire(_), #count{X, Y, ID : place(X, Y, ID)} != 1.
 
 % Definizione delle adiacenze sulla griglia per simulare il futuro
+% Adiacenze Ortagonali
 adiacente(X, Y, X+1, Y) :- cella(X,Y,_), cella(X+1,Y,_).
 adiacente(X, Y, X-1, Y) :- cella(X,Y,_), cella(X-1,Y,_).
 adiacente(X, Y, X, Y+1) :- cella(X,Y,_), cella(X,Y+1,_).
 adiacente(X, Y, X, Y-1) :- cella(X,Y,_), cella(X,Y-1,_).
+% Adiacenze Diagonali
+adiacente(X, Y, X+1, Y+1) :- cella(X,Y,_), cella(X+1,Y+1,_).
+adiacente(X, Y, X-1, Y-1) :- cella(X,Y,_), cella(X-1,Y-1,_).
+adiacente(X, Y, X+1, Y-1) :- cella(X,Y,_), cella(X+1,Y-1,_).
+adiacente(X, Y, X-1, Y+1) :- cella(X,Y,_), cella(X-1,Y+1,_).
 
 % Calcola quali vicini avrebbe il piatto se venisse messo nella cella scelta
 futureNeighbor(ID, NID) :- place(X,Y,ID), adiacente(X,Y,NX,NY), cella(NX,NY,NID), NID != -1.

@@ -82,6 +82,7 @@ public class PlateComponent extends JPanel {
         }
 
         int id = model.getDisplayId();
+        // l'id è disegnato solo se non vale -1
         if (id != -1) {
             String idString = String.valueOf(id);
             g.setFont(new Font("Arial", Font.BOLD, 12));
