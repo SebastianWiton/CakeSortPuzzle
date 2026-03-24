@@ -21,21 +21,22 @@ L'obiettivo del gioco è ripulire il vassoio (`Tray`) spostando e unendo pezzi d
 
 ## Funzionalità Implementate
 *   **Logica AI-Driven con EmbASP:** Tutti gli spostamenti dei pezzi (sia le reazioni immediate al drop che le catene successive) sono calcolati dal solver **DLV2** tramite regole ASP.
+*   **Suggeritore Strategico (Hint System):** Una funzione che analizza tutti i piatti disponibili sul tavolo e tutte le celle vuote del vassoio, simulando le reazioni a catena future per consigliare all'utente il posizionamento ottimale.
 *   **Cronologia Mosse Dettagliata:** Un log accessibile tramite pulsante mostra ogni singola mossa decisa dall'IA.
-*   **Suggeritore (Hint):** Una funzione che interroga l'IA per suggerire al giocatore lo slot migliore in cui piazzare un nuovo piatto per creare le migliori reazioni a catena.
+*   **Controlli di Gioco:** Pulsanti per resettare la partita, generare nuovi piatti e tornare al menu.
 
 ## Logica ASP
 
 La logica definita nei file ASP segue una gerarchia di priorità (implementata tramite *Weak Constraints*) progettata per imitare la strategia logica del gioco:
 
-1.  **La Regola di Completamento (Priorità Massima):**
-    *   L'IA cercherà sempre, prima di ogni altra cosa, la mossa che permette di completare un piatto portandolo a 6 pezzi di un unico colore.
-2.  **La Regola dell'Ordine (Priorità Alta):**
-    *   Se non può completare, l'IA preferisce spostare i pezzi verso i piatti più "puliti". **La mossa viene penalizzata in base a quanti colori diversi ci sono sul piatto di destinazione: meno colori ci sono, più la mossa viene considerata vantaggiosa**.
-3.  **La Regola dell'Estrazione (Priorità Media):**
-    *   A parità di ordine della destinazione, l'IA preferisce estrarre pezzi dai piatti molto misti. Viene premiato lo spostamento di pezzi da piatti che hanno una grande varietà di colori.
-4.  **La Regola dell'Accumulo (Priorità Bassa):**
-    *   Come spareggio finale, se tutte le altre condizioni sono pari, l'IA sposta i pezzi verso il mucchio che è già più grande.
+### Ottimizzazione e Priorità
+1.  **La Regola di Completamento (Priorità Massima - Livello 10):** L'IA cercherà sempre, prima di ogni altra cosa, la mossa che permette di completare un piatto portandolo a 6 pezzi di un unico colore.
+2.  **La Regola dell'Ordine (Priorità Alta - Livello 5):** Se non può completare, l'IA preferisce spostare i pezzi verso i piatti più "puliti". La mossa viene penalizzata in base a quanti colori diversi ci sono sul piatto di destinazione: meno colori ci sono, più la mossa è considerata vantaggiosa.
+3.  **La Regola dell'Estrazione (Priorità Media - Livello 3):** L'IA preferisce estrarre pezzi dai piatti molto misti per purificarli. Viene data priorità allo spostamento di pezzi da piatti che hanno una grande varietà di colori.
+4.  **La Regola dell'Accumulo (Priorità Bassa - Livello 1):** Come spareggio finale, se tutte le altre condizioni sono pari, l'IA dà la priorità al piatto che può spostare il maggior numero di pezzi.
+
+### Logica del Suggeritore
+Per fornire il suggerimento di piazzamento, l'IA esegue una simulazione: identifica le celle vuote (ID -1), calcola matematicamente le nuove adiacenze che si verrebbero a creare posizionando un piatto in una determinata coordinata e ne valuta le conseguenze strategiche future.
 
 ## Logica di Gioco Dettagliata (Il Motore IA)
 
@@ -45,8 +46,8 @@ Il flusso di esecuzione che unisce Java e ASP è il seguente:
 2.  **Avvio del Timer:** Il `gameLoopTimer` (con un tick ogni 250ms) si avvia, innescando il ciclo decisionale dell'IA.
 3.  **`runGameLogicStep()` (ad ogni "tick"):**
     *   **Scansione (Java):** Il codice traduce l'intero stato attuale del vassoio (numero di pezzi, colori, piatti vicini) in fatti testuali (es. `plateInfo`, `neighborInfo`).
-    *   **Risoluzione (EmbASP/DLV2):** I fatti vengono uniti alle regole del gioco e passati al solver. DLV2 calcola i modelli validi e applica l'ottimizzazione per trovare quello con il costo minore.
-    *   **Esecuzione (Java):** Il manager estrae la mossa ottima (`Move`) dall'ultimo Answer Set calcolato. Java esegue fisicamente lo spostamento dei pezzi e rimuove i piatti vuoti o completi.
+    *   **Risoluzione (EmbASP/DLV2):** I fatti vengono uniti alle regole del gioco e passati al solver. DLV2 calcola i modelli validi e applica l'ottimizzazione gerarchica per trovare l'**ultimo Answer Set** (l'OPTIMUM).
+    *   **Esecuzione (Java):** Il manager estrae la mossa dal risultato e aggiorna fisicamente i modelli e la grafica.
     *   **Terminazione:** Se DLV2 non trova nessuna mossa utile da fare, il timer si ferma e il turno torna al giocatore.
 
 ## Come Eseguire il Progetto
