@@ -2,6 +2,7 @@ package model;
 
 import it.unical.mat.embasp.base.Handler;
 import it.unical.mat.embasp.base.InputProgram;
+import it.unical.mat.embasp.base.OptionDescriptor;
 import it.unical.mat.embasp.base.Output;
 import it.unical.mat.embasp.languages.asp.ASPMapper;
 import it.unical.mat.embasp.languages.asp.ASPInputProgram;
@@ -20,11 +21,11 @@ import java.util.stream.Collectors;
 public class EmbaspManager {
 
     private final String solverPath;
-    private final String encodingResourcePath;
+    private final String[] encodingResourcePaths;
 
-    public EmbaspManager(String solverPath, String encodingResourcePath) {
+    public EmbaspManager(String solverPath, String[] encodingResourcePath) {
         this.solverPath = solverPath;
-        this.encodingResourcePath = encodingResourcePath;
+        this.encodingResourcePaths = encodingResourcePath;
 
         try {
             ASPMapper mapper = ASPMapper.getInstance();
@@ -40,98 +41,69 @@ public class EmbaspManager {
     }
 
     public Move getNextMove(List<Object> facts) {
-        return (Move) solve(facts, Move.class);
+        return (Move) solve(facts, Move.class, this.encodingResourcePaths[0]);
     }
 
     public Place getBestPlacement(List<Object> facts) {
-        return (Place) solve(facts, Place.class);
+        return (Place) solve(facts, Place.class, this.encodingResourcePaths[1]);
     }
 
-    private Object solve(List<Object> javaFacts, Class<?> targetClass) {
+    private Object solve(List<Object> javaFacts, Class<?> targetClass, String encodingResourcePath) {
+        // Ad ogni chiamata viene creato un handler nuovo per evitare problemi di stato.
         Handler handler = new DesktopHandler(new DLV2DesktopService(solverPath));
 
+        OptionDescriptor allModelsOption = new OptionDescriptor("-n 0 ");
+        handler.addOption(allModelsOption);
+
+
+        // Programma per le regole (encoding) caricato ad ogni chiamata
         InputProgram encoding = new ASPInputProgram();
         try (InputStream is = getClass().getResourceAsStream(encodingResourcePath);
              BufferedReader reader = new BufferedReader(new InputStreamReader(is, StandardCharsets.UTF_8))) {
             String rules = reader.lines().collect(Collectors.joining("\n"));
             encoding.setPrograms(rules);
         } catch (Exception e) {
+            System.err.println("ERRORE CRITICO: Impossibile caricare le regole ASP da: " + encodingResourcePath);
             e.printStackTrace();
             return null;
         }
         handler.addProgram(encoding);
 
+
         InputProgram facts = new ASPInputProgram();
-        facts.addProgram("\n");
         for (Object fact : javaFacts) {
-            if (fact instanceof PlateInfo) {
-                PlateInfo p = (PlateInfo) fact;
-                facts.addProgram("plateInfo(" + p.id + ", \"" + p.color + "\", " + p.quantity + ").\n");
-            }
-            else if (fact instanceof NeighborInfo) {
-                NeighborInfo n = (NeighborInfo) fact;
-                facts.addProgram("neighborInfo(" + n.id1 + ", " + n.id2 + ").\n");
-            }
-            else if (fact instanceof CellaInfo) {
-                CellaInfo c = (CellaInfo) fact;
-                facts.addProgram("cella(" + c.getX() + "," + c.getY() + "," + c.getId() + ").\n");
-            }
-            else if (fact instanceof PiattoDaInserireInfo) {
-                PiattoDaInserireInfo p = (PiattoDaInserireInfo) fact;
-                facts.addProgram("piattoDaInserire(" + p.getId() + ").\n");
+            try {
+                facts.addObjectInput(fact);
+            } catch (Exception e) {
+                e.printStackTrace();
             }
         }
-        System.out.println("--- INPUT INVIATO A DLV ---");
-        System.out.println(facts.getPrograms());
-        System.out.println("-------------------------");
-
 
         handler.addProgram(facts);
 
         Output output = handler.startSync();
-        System.out.println("ERRORI DLV: " + output.getErrors());
-        System.out.println("OUTPUT DLV: " + output.getOutput());
+        System.out.println("RAW OUTPUT SOLVER: " + output.getOutput());
+
         AnswerSets answerSets = (AnswerSets) output;
+        for (Object x : answerSets.getOptimalAnswerSets()) {
+            System.out.println(x);
+        }
+
 
         if (answerSets.getAnswersets().isEmpty()) {
-            System.out.println("DEBUG (EmbaspManager): Nessun Answer Set trovato.");
+            System.out.println("DEBUG (EmbaspManager): Il solver non ha restituito nessuna soluzione (Answer Set vuoto).");
             return null;
         }
 
         try {
-            List<AnswerSet> sets = answerSets.getAnswersets();
-            AnswerSet optimalSet = sets.get(sets.size() - 1);
-
-            List<String> atoms = optimalSet.getAnswerSet();
-
-            System.out.println("PENSIERO IA: " + String.join(", ", atoms));
-
-            for (String atom : atoms) {
-                // PARSING MANUALE per l'oggetto Place (Suggerimento)
-                if (targetClass == Place.class && atom.startsWith("place(")) {
-                    // Toglie "place(" e ")" e divide per virgola
-                    String content = atom.substring(6, atom.length() - 1);
-                    String[] p = content.split(",");
-                    return new Place(
-                            Integer.parseInt(p[0].trim()),
-                            Integer.parseInt(p[1].trim()),
-                            Integer.parseInt(p[2].trim())
-                    );
-                }
-
-                // PARSING MANUALE per l'oggetto Move
-                if (targetClass == Move.class && atom.startsWith("move(")) {
-                    // Toglie "move(" e ")" e divide per virgola
-                    String content = atom.substring(5, atom.length() - 1);
-                    String[] p = content.split(",");
-                    int d = Integer.parseInt(p[0].trim());
-                    int r = Integer.parseInt(p[1].trim());
-                    String color = p[2].trim().replace("\"", ""); // Rimuove le virgolette dal colore
-                    return new Move(d, r, color);
+            AnswerSet optimalSet = answerSets.getOptimalAnswerSets().get(0);
+            for (Object obj : optimalSet.getAtoms()) {
+                if (targetClass.isInstance(obj)) {
+                    return targetClass.cast(obj);
                 }
             }
+            System.out.println("DEBUG (EmbaspManager): Trovato un Answer Set, ma non conteneva un oggetto di tipo " + targetClass.getSimpleName());
         } catch (Exception e) {
-            System.err.println("Errore durante il parsing manuale: " + e.getMessage());
             e.printStackTrace();
         }
         return null;

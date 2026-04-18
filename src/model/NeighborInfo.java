@@ -7,9 +7,9 @@ import it.unical.mat.embasp.languages.Param;
 @Id("neighborInfo")
 public class NeighborInfo {
     @Param(0)
-    public int id1;
+    private int id1;
     @Param(1)
-    public int id2;
+    private int id2;
 
     public NeighborInfo() {}
 

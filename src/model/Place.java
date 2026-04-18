@@ -5,9 +5,9 @@ import it.unical.mat.embasp.languages.Param;
 
 @Id("place")
 public class Place {
-    @Param(0) public int x;
-    @Param(1) public int y;
-    @Param(2) public int id;
+    @Param(0) private int x;
+    @Param(1) private int y;
+    @Param(2) private int id;
 
     public Place() {}
     public Place(int x, int y, int id) {
@@ -19,4 +19,11 @@ public class Place {
     public int getX() { return x; }
     public int getY() { return y; }
     public int getId() { return id; }
+
+    public void setX(int x) { this.x = x; }
+    public void setY(int y) { this.y = y; }
+    public void setId(int id) { this.id = id; }
+
+    @Override
+    public String toString() { return "place(" + x + ","+y+","+id+")."; }
 }

@@ -9,7 +9,7 @@ import java.util.stream.Collectors;
 public class Plate {
     /* Per garantire di distinguere due piatti con lo steso contenuto */
 
-    /* Gli ID sono alti pechè internalCounter è static e non viene mai resettato,
+    /* Gli ID sono alti pechè internalCounterr è static e non viene mai resettato,
     e ogni componente della griglia
     (anche i buchi) crea un'istanza di Plate al momento della sua creazione. */
 

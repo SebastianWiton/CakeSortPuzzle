@@ -69,7 +69,7 @@ public class GamePanel extends JPanel {
         add(bot, BorderLayout.SOUTH);
 
         // Creazione del controller
-        controller = new GameController(this, new EmbaspManager("lib/dlv2.exe", "/encodings/cake_rules.asp"));
+        controller = new GameController(this, new EmbaspManager("lib/dlv2.exe", new String[]{"/encodings/cake_rules.asp", "/encodings/choose_move.asp"}));
         controller.generateNewPlates();
     }
 

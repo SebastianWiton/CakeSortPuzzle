@@ -7,13 +7,13 @@ import it.unical.mat.embasp.languages.Param;
 @Id("cella")
 public class CellaInfo {
     @Param(0)
-    public int x;
+    private int x;
 
     @Param(1)
-    public int y;
+    private int y;
 
     @Param(2)
-    public int id;
+    private int id;
 
     public CellaInfo() {}
 
@@ -32,7 +32,7 @@ public class CellaInfo {
     @Override
     public String toString() {
         // Se l'ID è -1, viene stampato. Altrimenti, viene formattato come "piattoX".
-        String idString = (id == -1) ? "-1" : "piatto" + id;
+        String idString = (id == -1) ? "-1" : String.valueOf(id);
         return "cella(" + x + "," + y + "," + idString + ").";
     }
 }

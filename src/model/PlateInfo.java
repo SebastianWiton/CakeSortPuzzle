@@ -7,11 +7,11 @@ import it.unical.mat.embasp.languages.Param;
 @Id("plateInfo")
 public class PlateInfo {
     @Param(0)
-    public int id;
+    private int id;
     @Param(1)
-    public String color;
+    private String color;
     @Param(2)
-    public int quantity;
+    private int quantity;
 
     public PlateInfo() {}
 
@@ -30,7 +30,7 @@ public class PlateInfo {
     public void setQuantity(int quantity) { this.quantity = quantity; }
     @Override
     public String toString() {
-        String idString = "piatto" + id;
-        return "piatto(" + idString + ", " + quantity + ", " + color + ").";
+        String idString = String.valueOf(id);
+        return "plateInfo(" + idString + ", " + color + ", " + quantity + ").";
     }
 }
