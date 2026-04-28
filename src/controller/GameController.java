@@ -47,6 +47,7 @@ public class GameController {
         this.logMoveCounter = 1;
         this.plateDisplayIdCounter = 1;
         this.gameLog.clear();
+        this.gameLog.add("<b>=== INIZIO SESSIONE DI GIOCO ===</b><hr>");
 
         for (PlateComponent pc : panel.getTrayPanel().getAllPlates()) {
             pc.getModel().setDisplayId(plateDisplayIdCounter++);
@@ -64,21 +65,21 @@ public class GameController {
 
     private void showGameLog() {
         if (gameLog.isEmpty()) {
-            JOptionPane.showMessageDialog(panel, "Nessuna mossa ancora registrata.", "Cronologia Mosse", JOptionPane.INFORMATION_MESSAGE);
+            JOptionPane.showMessageDialog(panel, "Nessuna mossa registrata.", "Cronologia", JOptionPane.INFORMATION_MESSAGE);
             return;
         }
 
-        StringBuilder logText = new StringBuilder("<html>");
+        StringBuilder logText = new StringBuilder("<html><body style='width: 400px; font-family: sans-serif;'>");
         for (String entry : gameLog) {
             logText.append(entry).append("<br>");
         }
-        logText.append("</html>");
+        logText.append("</body></html>");
 
         JLabel logLabel = new JLabel(logText.toString());
         JScrollPane scrollPane = new JScrollPane(logLabel);
-        scrollPane.setPreferredSize(new Dimension(500, 350));
+        scrollPane.setPreferredSize(new Dimension(500, 450));
 
-        JOptionPane.showMessageDialog(panel, scrollPane, "Cronologia Mosse", JOptionPane.INFORMATION_MESSAGE);
+        JOptionPane.showMessageDialog(panel, scrollPane, "Cronologia Dettagliata", JOptionPane.PLAIN_MESSAGE);
     }
 
     private void setupDragAndDrop() {
@@ -89,9 +90,9 @@ public class GameController {
             setupPlateDrag(plate);
         }
         /* Controlla se l'oggetto trascinato è del tipo giusto (PlateTransferable.plateFlavor)
-        * Se si, accetta il drop, recupera i dati di plate e point, identifica su quale
-        * targetHole è avvenuto il rilascio, chiama handleDrop per gestire la logica
-        * del piazzamento */
+         * Se si, accetta il drop, recupera i dati di plate e point, identifica su quale
+         * targetHole è avvenuto il rilascio, chiama handleDrop per gestire la logica
+         * del piazzamento */
         new DropTarget(tray, new DropTargetAdapter() {
             @Override
             public void drop(DropTargetDropEvent dtde) {
@@ -142,7 +143,7 @@ public class GameController {
 
     public void handleDrop(PlateComponent targetHole, PlateComponent draggedPlate) {
         /* Gestisce il piazzamento di un piatto, aggiornando il modello (spostando il piatto)
-        * e avviando la logica di gioco (processGameLogic) */
+         * e avviando la logica di gioco (processGameLogic) */
         if (gameLoopTimer.isRunning()) {
             gameLoopTimer.stop();
         }
@@ -166,8 +167,9 @@ public class GameController {
 
         TrayPanel tray = panel.getTrayPanel();
         String placedContent = justPlacedPlate.getModel().getContentsAsString();
-        gameLog.add("--- Mossa #" + logMoveCounter++ + ": Piazzato Piatto " + justPlacedPlate.getModel().getDisplayId() + " con [" + placedContent + "] ---");
 
+        gameLog.add("<b style='color: blue;'>--- Mossa #" + logMoveCounter++ + ": Piazzato Piatto "
+                + justPlacedPlate.getModel().getDisplayId() + " con [" + placedContent + "] ---</b>");
 
         for (PlateComponent neighbor : tray.getNeighbors(justPlacedPlate)) {
             Set<String> commonColors = new HashSet<>(justPlacedPlate.getUniqueColors());
@@ -180,24 +182,17 @@ public class GameController {
                 PlateComponent donator = null;
                 PlateComponent receiver = null;
 
-
                 if (piecesOnNeighbor > piecesOnNewPlate) {
-                    // Il vicino ha più pezzi, quindi è il ricevente
                     donator = justPlacedPlate;
                     receiver = neighbor;
                 } else if (piecesOnNewPlate > piecesOnNeighbor) {
-                    // Il nuovo piatto ha più pezzi, quindi è il ricevente
                     donator = neighbor;
                     receiver = justPlacedPlate;
                 } else {
-                    // Caso di parità
-                    // La mossa migliore è quella che "purifica" un piatto.
-                    // Scegli come donatore quello con più varietà di colori.
                     if (justPlacedPlate.getUniqueColors().size() > neighbor.getUniqueColors().size()) {
                         donator = justPlacedPlate;
                         receiver = neighbor;
                     } else {
-                        // Se la varietà è uguale o minore, il vicino dona (manteniamo un default)
                         donator = neighbor;
                         receiver = justPlacedPlate;
                     }
@@ -220,8 +215,6 @@ public class GameController {
         }
     }
 
-
-
     private void runGameLogicStep() {
         TrayPanel tray = panel.getTrayPanel();
 
@@ -241,7 +234,7 @@ public class GameController {
         }
 
         for (Object fact : facts) {
-            System.out.println(fact.toString()); // Usiamo toString() per avere una rappresentazione
+            System.out.println(fact.toString());
         }
         System.out.println("-----------------------------");
 
@@ -279,19 +272,36 @@ public class GameController {
 
         if (!actionTaken) {
             gameLoopTimer.stop();
+            logGridStatus();
         }
     }
 
     // Metodi di logging e supporto
     private void logAction(String context, PlateComponent donator, PlateComponent receiver, String color, int moved) {
         if (moved == 0) return;
-        gameLog.add("  > " + context + ": " + moved + " pezzi " + color + " spostati da Piatto " + donator.getModel().getDisplayId() + " a Piatto " + receiver.getModel().getDisplayId());
+        gameLog.add("  &rsaquo; <b>" + context + "</b>: " + moved + " " + color + " (P"
+                + donator.getModel().getDisplayId() + " &rarr; P" + receiver.getModel().getDisplayId() + ")");
     }
 
     private void logRemovedPlates(List<Plate> removedPlates, String context) {
         for (Plate removedPlate : removedPlates) {
-            gameLog.add("  > Piatto " + removedPlate.getDisplayId() + " rimosso" + context + ".");
+            gameLog.add("  <font color='red'>&bull; Piatto " + removedPlate.getDisplayId() + " rimosso" + context + ".</font>");
         }
+    }
+
+    private void logGridStatus() {
+        StringBuilder sb = new StringBuilder("<div style='margin-left: 20px; color: gray;'><i>Stato Griglia:</i><br>");
+        boolean empty = true;
+        for (PlateComponent pc : panel.getTrayPanel().getAllPlates()) {
+            if (!pc.isHoleComponent()) {
+                sb.append("&nbsp;&nbsp;- Piatto ").append(pc.getModel().getDisplayId())
+                        .append(": [").append(pc.getModel().getContentsAsString()).append("]<br>");
+                empty = false;
+            }
+        }
+        if (empty) sb.append("&nbsp;&nbsp;(Griglia vuota)");
+        sb.append("</div><hr>");
+        gameLog.add(sb.toString());
     }
 
     private PlateComponent findDraggedComponent(Plate plateModel) {
@@ -304,20 +314,42 @@ public class GameController {
     }
 
     public void generateNewPlates() {
-        // Rigenera piatti sul tavolo e gli rende trascinabili con setupPlateDrag
         TablePanel table = panel.getTablePanel();
         table.removeAll();
         table.getPlateComponents().clear();
+
+
+        StringBuilder sb = new StringBuilder("<b>NUOVO TAVOLO:</b><br>");
         for (int i = 0; i < 3; i++) {
             PlateComponent plate = new PlateComponent(false, 128);
             setupPlateDrag(plate);
             table.getPlateComponents().add(plate);
             table.add(plate);
+            sb.append("- [").append(plate.getModel().getContentsAsString()).append("]<br>");
         }
+
+        sb.append("<div style='margin-left: 20px; color: gray;'><i>Stato Griglia:</i><br>");
+        boolean empty = true;
+        for (PlateComponent pc : panel.getTrayPanel().getAllPlates()) {
+            if (!pc.isHoleComponent()) {
+                sb.append("&nbsp;&nbsp;- Piatto ").append(pc.getModel().getDisplayId())
+                        .append(": [").append(pc.getModel().getContentsAsString()).append("]<br>");
+                empty = false;
+            }
+        }
+        if (empty) {
+            sb.append("&nbsp;&nbsp;(Griglia vuota)");
+        }
+        sb.append("</div>");
+        sb.append("<hr>");
+
+        gameLog.add(sb.toString());
+
         table.revalidate();
         table.repaint();
         panel.getRefillButton().setEnabled(false);
     }
+
     public void suggestPlacement() {
         List<Object> facts = new ArrayList<>();
 
@@ -363,10 +395,19 @@ public class GameController {
 
         // Mostra il suggerimento all'utente
         if (suggestion != null) {
-            String message = "L'AI suggerisce di piazzare il piatto con ID (interno) " + suggestion.getId() +
-                    " nella cella (" + suggestion.getX() + ", " + suggestion.getY() + ").";
-            JOptionPane.showMessageDialog(panel, message, "Suggerimento Mossa", JOptionPane.INFORMATION_MESSAGE);
+            String content = "sconosciuto";
+            for(PlateComponent tp : tablePlates) {
+                if(tp.getModel().getInternalId() == suggestion.getId()) content = tp.getModel().getContentsAsString();
+            }
+            String message = "<html>IA SUGGERISCE:<br>Prendi il piatto con [" + content + "]<br>" +
+                    "e mettilo nella cella (Riga " + suggestion.getX() + ", Colonna " + suggestion.getY() + ")</html>";
+            JOptionPane.showMessageDialog(panel, message, "IA Hint", JOptionPane.INFORMATION_MESSAGE);
             panel.getTrayPanel().highlightSlot(suggestion.getX(), suggestion.getY());
+
+
+            String logMessage = "<i>Chiesto suggerimento: posizionare il piatto [" + content + "] in riga " +
+                    suggestion.getX() + ", col " + suggestion.getY() + "</i><hr>";
+            gameLog.add(logMessage);
         } else {
             JOptionPane.showMessageDialog(panel, "L'AI non ha trovato una mossa di piazzamento valida.", "Suggerimento Mossa", JOptionPane.WARNING_MESSAGE);
         }
