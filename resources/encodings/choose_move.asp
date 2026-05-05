@@ -113,14 +113,33 @@ monocromaticoPost(P) :- nuovoPiatto(P,_,_), not vuoto(P), #count{C : nuovoPiatto
 completo(P) :- nuovoPiatto(P,_,_), monocromaticoPost(P), #sum{Q,C:nuovoPiatto(P,C,Q)} = 6.
 
 % --- Weak Constraint ---
-% Massimizzo i neighbour compatibili
-:~ #count{X : piattiScambiabili(X)} = T, Z = 9-T. [Z@1]
-% mossa fantasma
-:~ S = #count{X : fantasma(X)}, T=1-S. [T@2]
-% Penalizzo l'aumento dell'entropia
+% @5 Completa un piatto
+:~ X = #count{M : completo(M)}, T = 20-X. [T@5]
+
+% @4 Penalizzo l'aumento dell'entropia della monocromia
 % Pago in base ad un delta che confronta l'entropia di colore dei piatti
 :~ X = #count{M : monocromaticoPre(M)},
    Y = #count{N : monocromaticoPost(N)},
-   T = 20 - (Y - X).   [T@3]
-% Completo un piatto, mossa migliore
-:~ X = #count{M : completo(M)}, T = 20-X. [T@5]
+   T = 20 - (Y - X).   [T@4]
+
+% @3 Gini, valutazione della "sporcizia" di un piatto       TROPPO PESANTE
+%modificato(P):- nuovoPiatto(P,_,_).
+%piattiGini(P,C,Q) :- nuovoPiatto(P,C,Q).
+%piattiGini(P,C,Q) :- piazzati(P,C,Q), not modificato(P).
+%n(P,X) :- piattiGini(P,_,_), X=#sum{F,C:piattiGini(P,C,F)}.
+%n_quadro(P,Y) :- n(P,X), Y=X*X.
+%n_i_quadro(P,C,X) :- n(P,_), piattiGini(P,C,Q), X=Q*Q.
+%somma_n_i(P,Y) :- n(P,_), Y=#sum{X,C : n_i_quadro(P,C,X)}.
+%dividendo(P,Z) :- n(P,_), n_quadro(P,X), somma_n_i(P,Y), Z=(X-Y)*100.
+%divisore(P,D) :- n(P,N), D=N*(N-1).
+%% se il nuovoPiatto ha N<>1
+%score(P,V) :- n(P,_), dividendo(P,Divid), divisore(P,Divis), Divis > 0, V=Divid/Divis.
+% se il nuovoPiatto ha N<>1
+%score(P,0) :- divisore(P,0).
+%sumScore(S) :- S=#sum{X,P : score(P,X)}.
+
+% @2 Mossa fantasma, cella risparmiata
+:~ S = #count{X : fantasma(X)}, T=1-S. [T@2]
+
+% @1 Massimizzare i Neighbour
+:~ #count{X : piattiScambiabili(X)} = T, Z = 9-T. [Z@1]
