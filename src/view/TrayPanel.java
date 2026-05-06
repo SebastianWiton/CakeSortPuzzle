@@ -14,8 +14,8 @@ import model.CellaInfo;
 public class TrayPanel extends JPanel {
     private static final Color TRAY_COLOR = new Color(160, 160, 160);
     private int rows, cols;
-    private PlateComponent[] slots; // NOME CORRETTO
-    private int slotSize = 128; // NOME CORRETTO
+    private PlateComponent[] slots;
+    private int slotSize = 128;
 
     public TrayPanel(int rows, int cols) {
         this.rows = rows;

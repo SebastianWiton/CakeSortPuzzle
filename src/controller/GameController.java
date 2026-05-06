@@ -86,16 +86,15 @@ public class GameController {
         TablePanel table = panel.getTablePanel();
         TrayPanel tray = panel.getTrayPanel();
 
+        // ogni piatto sul tavolo può essere trascinato
         for (PlateComponent plate : table.getPlateComponents()) {
             setupPlateDrag(plate);
         }
-        /* Controlla se l'oggetto trascinato è del tipo giusto (PlateTransferable.plateFlavor)
-         * Se si, accetta il drop, recupera i dati di plate e point, identifica su quale
-         * targetHole è avvenuto il rilascio, chiama handleDrop per gestire la logica
-         * del piazzamento */
         new DropTarget(tray, new DropTargetAdapter() {
             @Override
             public void drop(DropTargetDropEvent dtde) {
+                /* se sul vassoio viene rilasciato un piatto valido su una cella vuota,
+                * accetta l'operazione e chiama handledrop */
                 try {
                     Transferable tr = dtde.getTransferable();
                     if (tr.isDataFlavorSupported(PlateTransferable.plateFlavor)) {
@@ -148,11 +147,13 @@ public class GameController {
             gameLoopTimer.stop();
         }
 
+        // Assegna al piatto appena piazzato un nuovo DisplayId
         draggedPlate.getModel().setDisplayId(plateDisplayIdCounter++);
 
         TablePanel table = panel.getTablePanel();
         TrayPanel tray = panel.getTrayPanel();
 
+        // Sposta il componente visivo
         tray.replaceHoleWithPlate(targetHole, draggedPlate);
         table.removePlate(draggedPlate);
 
@@ -171,8 +172,10 @@ public class GameController {
         gameLog.add("<b style='color: blue;'>--- Mossa #" + logMoveCounter++ + ": Piazzato Piatto "
                 + justPlacedPlate.getModel().getDisplayId() + " con [" + placedContent + "] ---</b>");
 
+        // Guarda piatti vicini a quello appena posizionato
         for (PlateComponent neighbor : tray.getNeighbors(justPlacedPlate)) {
             Set<String> commonColors = new HashSet<>(justPlacedPlate.getUniqueColors());
+            // Cerca se hanno pezzi in comune
             commonColors.retainAll(neighbor.getUniqueColors());
 
             for (String color : commonColors) {
@@ -182,16 +185,25 @@ public class GameController {
                 PlateComponent donator = null;
                 PlateComponent receiver = null;
 
-                if (piecesOnNeighbor > piecesOnNewPlate) {
+                int uniqueColorsNew = justPlacedPlate.getUniqueColors().size();
+                int uniqueColorsNeighbor = neighbor.getUniqueColors().size();
+
+                // Il piatto più disordinato dona a quello più pulito
+                if (uniqueColorsNew > uniqueColorsNeighbor) {
                     donator = justPlacedPlate;
                     receiver = neighbor;
-                } else if (piecesOnNewPlate > piecesOnNeighbor) {
+                } else if (uniqueColorsNeighbor > uniqueColorsNew) {
                     donator = neighbor;
                     receiver = justPlacedPlate;
-                } else {
-                    if (justPlacedPlate.getUniqueColors().size() > neighbor.getUniqueColors().size()) {
+                }
+                // A parità di "pulizia", dona chi ha meno fette di quel colore
+                else {
+                    if (piecesOnNeighbor > piecesOnNewPlate) {
                         donator = justPlacedPlate;
                         receiver = neighbor;
+                    } else if (piecesOnNewPlate > piecesOnNeighbor) {
+                        donator = neighbor;
+                        receiver = justPlacedPlate;
                     } else {
                         donator = neighbor;
                         receiver = justPlacedPlate;
@@ -243,7 +255,7 @@ public class GameController {
 
         boolean actionTaken = false;
         if (nextMove != null) {
-            // Esegue la mossa suggerita da EmbASP e logga l'azione
+            // Esegue fisicamente la mossa suggerita da EmbASP e logga l'azione
             PlateComponent donator = tray.getPlateByDisplayId(nextMove.donatorId);
             PlateComponent receiver = tray.getPlateByDisplayId(nextMove.receiverId);
             String color = nextMove.color;
@@ -252,6 +264,8 @@ public class GameController {
                 int moved = gameLogic.movePieces(donator, receiver, color);
                 if (moved > 0) {
                     logAction("Catena (ASP)", donator, receiver, color, moved);
+                    // Se actionTaken è vero, il metodo finisce e il timer lo richiamerà
+                    // dopo 250ms per fare la mossa successiva
                     actionTaken = true;
                 }
             }
@@ -415,8 +429,8 @@ public class GameController {
 
     public void resetGame() {
         gameLoopTimer.stop();
-        setupControllerState();
         panel.getTrayPanel().resetHoles();
+        setupControllerState();
         generateNewPlates();
         panel.getRefillButton().setEnabled(false);
     }

@@ -9,13 +9,11 @@ import java.util.stream.Collectors;
 public class Plate {
     /* Per garantire di distinguere due piatti con lo steso contenuto */
 
-    /* Gli ID sono alti pechè internalCounter è static e non viene mai resettato,
-    e ogni componente della griglia
-    (anche i buchi) crea un'istanza di Plate al momento della sua creazione. */
+    /* internalId = per drag&drop
+    * displayId = quello che si vede sulla griglia */
 
     private static int internalCounter = 0;
     private final int internalId;
-    // ID visualizzato all'utente , assegnato dal controller.
     private int displayId;
 
     // Lista dei pezzi di torta sul piatto

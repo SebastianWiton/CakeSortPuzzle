@@ -26,6 +26,7 @@ public class PlateComponent extends JPanel {
         this.size = size;
         setOpaque(false);
 
+        // ogni cella del vassoio ha un plate associato
         model = new Plate(new ArrayList<>());
         setPreferredSize(new Dimension(this.size, this.size));
 
@@ -34,6 +35,7 @@ public class PlateComponent extends JPanel {
         }
     }
 
+    // Quando viene creato un piatto sul tavolo
     public void generateInitialPieces() {
         this.isHole = false;
         List<CakePiece> pieces = new ArrayList<>();

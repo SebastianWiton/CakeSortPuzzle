@@ -85,6 +85,7 @@ public class EmbaspManager {
         System.out.println("RAW OUTPUT SOLVER: " + output.getOutput());
 
         AnswerSets answerSets = (AnswerSets) output;
+
         for (Object x : answerSets.getOptimalAnswerSets()) {
             System.out.println(x);
         }
@@ -96,8 +97,10 @@ public class EmbaspManager {
         }
 
         try {
+            // optimalSet è una lista di atomi, stringhe restituite dai solver
             AnswerSet optimalSet = answerSets.getOptimalAnswerSets().get(0);
             for (Object obj : optimalSet.getAtoms()) {
+                // ci interessa solo l'oggetto specifico richiesto (move o place)
                 if (targetClass.isInstance(obj)) {
                     return targetClass.cast(obj);
                 }
