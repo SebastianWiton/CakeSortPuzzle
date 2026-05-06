@@ -47,7 +47,6 @@ monocromaticoPre(P2) :- neighbour(P2), #count{C : plateInfo(P2,C,Q), Q>0} = 1.
 % --- GUESS & CHECK ---
 % Genero tutte i possibili posizionamenti del piatto
 place(X,Y,P) | noPlace(X,Y,P) :- piattoDaInserire(P), cella(X,Y,-1).
-%place(2,2,35).
 % Solo una scelta alla volta è permessa
 :- #count{P,X,Y:place(X,Y,P)} != 1.
 
@@ -78,7 +77,7 @@ sposto(D,R,C,X) | noSposto(D,R,C,X) :- spostamentoPossibile(D,R,C,X).
    SommaDonata = #sum{X,D,C : sposto(R,D,C,X)},
    SommaRicevuta > SommaDonata+S.
 
-% aleatorio per somma ricevuto
+% aleatorio per somma ricevuto | Questo è stato creato perché quando si andava a lavora con somme direttamente su sposto() venivano creati come se ci fosse una somma iniziale, una intermedia ed una finale.
 rSposto(D,P,C,X) :- sposto(D,P,C,X).
 dSposto(D,P,C,X) :- sposto(D,P,C,X).
 
@@ -122,21 +121,12 @@ completo(P) :- nuovoPiatto(P,_,_), monocromaticoPost(P), #sum{Q,C:nuovoPiatto(P,
    Y = #count{N : monocromaticoPost(N)},
    T = 20 - (Y - X).   [T@4]
 
-% @3 Gini, valutazione della "sporcizia" di un piatto       TROPPO PESANTE
-%modificato(P):- nuovoPiatto(P,_,_).
-%piattiGini(P,C,Q) :- nuovoPiatto(P,C,Q).
-%piattiGini(P,C,Q) :- piazzati(P,C,Q), not modificato(P).
-%n(P,X) :- piattiGini(P,_,_), X=#sum{F,C:piattiGini(P,C,F)}.
-%n_quadro(P,Y) :- n(P,X), Y=X*X.
-%n_i_quadro(P,C,X) :- n(P,_), piattiGini(P,C,Q), X=Q*Q.
-%somma_n_i(P,Y) :- n(P,_), Y=#sum{X,C : n_i_quadro(P,C,X)}.
-%dividendo(P,Z) :- n(P,_), n_quadro(P,X), somma_n_i(P,Y), Z=(X-Y)*100.
-%divisore(P,D) :- n(P,N), D=N*(N-1).
-%% se il nuovoPiatto ha N<>1
-%score(P,V) :- n(P,_), dividendo(P,Divid), divisore(P,Divis), Divis > 0, V=Divid/Divis.
-% se il nuovoPiatto ha N<>1
-%score(P,0) :- divisore(P,0).
-%sumScore(S) :- S=#sum{X,P : score(P,X)}.
+% @3 Valutazione e penalizzazione dei piatti troppo misti
+totaleFetteNuovoPiatto(P,S) :- nuovoPiatto(P,_,_), S=#sum{F,C : nuovoPiatto(P,C,F)}.
+maxColore(P,N):- nuovoPiatto(P,_,_), N = #max{Q,C : nuovoPiatto(P,C,Q)}.
+% normalizzo il valore con *100/N così da ottenere una percentuale e dare valore alla distribuzione. Altrimenti 1yellow,1red avrebbe lo stesso peso di 3yellow,1red. rendendo a percentuale si diventa un po' più precisi.
+score(P,S) :- maxColore(P,M), totaleFettePiatto(P,N), N > 0, S = (N-M)*100/N.
+:~ nuovoPiatto(P,_,_), score(P,S). [S@3,P]
 
 % @2 Mossa fantasma, cella risparmiata
 :~ S = #count{X : fantasma(X)}, T=1-S. [T@2]

@@ -423,7 +423,7 @@ public class GameController {
                     suggestion.getX() + ", col " + suggestion.getY() + "</i><hr>";
             gameLog.add(logMessage);
         } else {
-            JOptionPane.showMessageDialog(panel, "L'AI non ha trovato una mossa di piazzamento valida.", "Suggerimento Mossa", JOptionPane.WARNING_MESSAGE);
+            JOptionPane.showMessageDialog(panel, "L'AI non ha trovato una mossa di piazzamento migliore, piazza il piatto sulla griglia evitando glia angoli.", "Suggerimento Mossa", JOptionPane.WARNING_MESSAGE);
         }
     }
 
